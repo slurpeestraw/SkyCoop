@@ -6,6 +6,8 @@ namespace SkyCoopServer
     public class ServerVoice : IDisposable
     {
         public const int c_DefaultPort = 37850;
+        // Voice packets above 64 KiB are treated as malformed; normal Opus frames are far smaller.
+        public const int c_MaxVoicePacketBytes = 64 * 1024;
         public NetworkHelper m_NetworkHelper;
 
         public EventBasedNetListener m_Listener;
@@ -70,7 +72,14 @@ namespace SkyCoopServer
 
                 if(Player != null)
                 {
-                    byte[] Data = new byte[Reader.GetInt()];
+                    int Length = Reader.GetInt();
+                    if (Length < 0 || Length > Reader.AvailableBytes || Length > c_MaxVoicePacketBytes)
+                    {
+                        Logger.Log(ConsoleColor.Red, $"[ServerVoice] Rejected voice packet with invalid length {Length} from {Peer.Id}");
+                        return;
+                    }
+
+                    byte[] Data = new byte[Length];
                     Reader.GetBytes(Data, Data.Length);
                     SendVoiceToWhoCanHearIt(Data, Player.m_PlayerID);
                 }
@@ -125,31 +134,44 @@ namespace SkyCoopServer
         public void StartServer(int port, int maxPlayers, string key = Packet.c_Key)
         {
             Logger.Log("[ServerVoice] Starting voice server");
-            m_Instance.Start(port);
+            if (!m_Instance.Start(port))
+            {
+                Logger.Log(ConsoleColor.Red, $"[ServerVoice] Failed to bind voice server port={port}; voice disabled");
+                return;
+            }
 
             m_Listener.ConnectionRequestEvent += request =>
             {
-                if (m_Instance.ConnectedPeersCount < maxPlayers)
-                    request.AcceptIfKey(key);
-                else
-                    request.Reject();
+                PacketDispatch.Guard("Voice connection request", () =>
+                {
+                    if (m_Instance.ConnectedPeersCount < maxPlayers)
+                        request.AcceptIfKey(key);
+                    else
+                        request.Reject();
+                }, msg => Logger.Log(ConsoleColor.Red, msg));
             };
 
             m_Listener.PeerConnectedEvent += peer =>
             {
-                Logger.Log($"[ServerVoice] We got connection: {peer} assigned them as {peer.Id}");
+                PacketDispatch.Guard("Voice peer connected", () =>
+                {
+                    Logger.Log($"[ServerVoice] We got connection: {peer} assigned them as {peer.Id}");
 
-                SendVerificationRequestToClient(peer);
+                    SendVerificationRequestToClient(peer);
+                }, msg => Logger.Log(ConsoleColor.Red, msg));
             };
 
             m_Listener.PeerDisconnectedEvent += (peer, message) =>
             {
-                Logger.Log($"[ServerVoice] Voice Client {peer.Id} disconnected {message.Reason.ToString()}");
-
-                if(m_GameServer != null && m_GameServer.m_IsReady)
+                PacketDispatch.Guard("Voice peer disconnected", () =>
                 {
-                    m_GameServer.ClearVoiceID(peer.Id);
-                }
+                    Logger.Log($"[ServerVoice] Voice Client {peer.Id} disconnected {message.Reason.ToString()}");
+
+                    if(m_GameServer != null && m_GameServer.m_IsReady)
+                    {
+                        m_GameServer.ClearVoiceID(peer.Id);
+                    }
+                }, msg => Logger.Log(ConsoleColor.Red, msg));
             };
 
             m_Listener.NetworkLatencyUpdateEvent += (peer, ping) =>
@@ -158,28 +180,31 @@ namespace SkyCoopServer
             };
             m_Listener.NetworkReceiveEvent += (fromPeer, dataReader, channel, deliveryMethod) =>
             {
-                int PacketID = dataReader.GetInt();
-
-                switch ((Packet.TypeVoice)PacketID)
+                PacketDispatch.Guard("Voice receive", () =>
                 {
-                    case Packet.TypeVoice.Verification:
+                    int PacketID = dataReader.GetInt();
 
-                        if (m_GameServer != null && m_GameServer.m_IsReady)
-                        {
-                            m_GameServer.SetVoiceIDForPlayer(dataReader.GetInt(), fromPeer.Id);
-                            SendWelcomeToClient(fromPeer);
-                        }
-                        else
-                        {
-                            Logger.Log(ConsoleColor.Red, $"[ServerVoice] Client trying to verify themself, but game server is down, while voice chat server is up!");
-                        }
-                        break;
-                    case Packet.TypeVoice.Voice:
-                        ExecuteVoice(fromPeer, dataReader);
-                        break;
-                    default:
-                        break;
-                }
+                    switch ((Packet.TypeVoice)PacketID)
+                    {
+                        case Packet.TypeVoice.Verification:
+
+                            if (m_GameServer != null && m_GameServer.m_IsReady)
+                            {
+                                m_GameServer.SetVoiceIDForPlayer(dataReader.GetInt(), fromPeer.Id);
+                                SendWelcomeToClient(fromPeer);
+                            }
+                            else
+                            {
+                                Logger.Log(ConsoleColor.Red, $"[ServerVoice] Client trying to verify themself, but game server is down, while voice chat server is up!");
+                            }
+                            break;
+                        case Packet.TypeVoice.Voice:
+                            ExecuteVoice(fromPeer, dataReader);
+                            break;
+                        default:
+                            break;
+                    }
+                }, msg => Logger.Log(ConsoleColor.Red, msg));
 
                 dataReader.Recycle();
             };
@@ -187,13 +212,6 @@ namespace SkyCoopServer
             m_IsReady = true;
             Logger.Log($"[ServerVoice] Voice server is started port={port}");
             m_NetworkHelper = new NetworkHelper(port, "SkyCoopServerVoice");
-
-            Task.Run(() => {
-                while (m_GameServer.m_IsReady) 
-                { 
-                    Update(); 
-                } 
-            });
         }
 
         public void Dispose()

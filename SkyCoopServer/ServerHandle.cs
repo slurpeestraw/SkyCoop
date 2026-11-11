@@ -14,6 +14,14 @@ namespace SkyCoopServer
         public static void Welcome(NetPeer Client, NetDataReader Reader, Server ServerInstance)
         {
             string PlayerName = Reader.GetString();
+            int? ProtocolVersion = Reader.TryGetInt(out int ClientVersion) ? ClientVersion : null;
+            if (!ProtocolCheck.IsCompatible(ProtocolVersion, out string Reason))
+            {
+                Logger.Log(ConsoleColor.Red, $"[ServerHandle] {Reason}");
+                ServerInstance.DisconnectPlayer(Client, Reason);
+                return;
+            }
+
             if(!ServerInstance.m_PlayersData.SetPlayerName(Client.Id, PlayerName))
             {
                 return;

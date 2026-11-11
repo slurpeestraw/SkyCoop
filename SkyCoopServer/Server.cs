@@ -124,7 +124,7 @@ namespace SkyCoopServer
             PacketHandler Handle;
             if (s_packetHandlers.TryGetValue(PacketID, out Handle))
             {
-                Handle(Client, Reader, this);
+                PacketDispatch.Invoke(PacketID, () => Handle(Client, Reader, this), msg => Logger.Log(ConsoleColor.Red, $"{msg} (peer {Client.Id})"));
             }
         }
 
@@ -295,6 +295,7 @@ namespace SkyCoopServer
             {
                 m_Instance.PollEvents();
             }
+            m_VoiceServer?.Update();
             if(DateTime.UtcNow >= s_NextSecondCall)
             {
                 s_NextSecondCall = DateTime.UtcNow.AddSeconds(1);
@@ -701,15 +702,22 @@ namespace SkyCoopServer
 
             m_Listener.PeerConnectedEvent += peer =>
             {
-                Logger.Log(ConsoleColor.Green, $"[Server] We got connection: {peer} assigned them as {peer.Id}");
-                ServerSend.Welcome(peer, peer.Id);
+                PacketDispatch.Guard("PeerConnectedEvent", () =>
+                {
+                    Logger.Log(ConsoleColor.Green, $"[Server] We got connection: {peer} assigned them as {peer.Id}");
+                    m_PlayersData.EnsureSlot(peer.Id);
+                    ServerSend.Welcome(peer, peer.Id);
+                }, msg => Logger.Log(ConsoleColor.Red, msg));
             };
 
             m_Listener.PeerDisconnectedEvent += (peer, message) =>
             {
-                Logger.Log(ConsoleColor.Red, $"[GameServer] Client {peer.Id} disconnected {message.Reason.ToString()}");
+                PacketDispatch.Guard("PeerDisconnectedEvent", () =>
+                {
+                    Logger.Log(ConsoleColor.Red, $"[GameServer] Client {peer.Id} disconnected {message.Reason.ToString()}");
 
-                m_PlayersData.OnPlayerDisconnect(peer.Id);
+                    m_PlayersData.OnPlayerDisconnect(peer.Id);
+                }, msg => Logger.Log(ConsoleColor.Red, msg));
             };
 
             m_Listener.NetworkLatencyUpdateEvent += (peer, ping) =>
@@ -719,9 +727,12 @@ namespace SkyCoopServer
 
             m_Listener.NetworkReceiveEvent += (fromPeer, dataReader, channel, deliveryMethod) =>
             {
-                int PacketID = dataReader.GetInt();
+                PacketDispatch.Guard("NetworkReceiveEvent", () =>
+                {
+                    int PacketID = dataReader.GetInt();
 
-                ExecutePacketEvent(PacketID, fromPeer, dataReader);
+                    ExecutePacketEvent(PacketID, fromPeer, dataReader);
+                }, msg => Logger.Log(ConsoleColor.Red, msg));
 
                 dataReader.Recycle();
             };
@@ -731,7 +742,7 @@ namespace SkyCoopServer
 
             if(m_Config.m_VoicePort != 0)
             {
-                Task.Run(StartServerVoice);
+                StartServerVoice();
             }
         }
 

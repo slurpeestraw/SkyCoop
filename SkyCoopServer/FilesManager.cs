@@ -421,6 +421,109 @@ namespace SkyCoopServer
             return JsonSerializer.Deserialize<ScenesAnimalSpawns>(JSON, options);
         }
 
+        public static void WriteAllTextAtomic(string path, string contents)
+        {
+            string TmpPath = path + ".tmp";
+            try
+            {
+                using (FileStream Stream = new FileStream(TmpPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (StreamWriter Writer = new StreamWriter(Stream))
+                {
+                    Writer.Write(contents);
+                    Writer.Flush();
+                    Stream.Flush(true);
+                }
+
+                if (File.Exists(path))
+                {
+                    File.Replace(TmpPath, path, path + ".bak");
+                }
+                else
+                {
+                    File.Move(TmpPath, path);
+                }
+            }
+            catch
+            {
+                try
+                {
+                    if (File.Exists(TmpPath))
+                    {
+                        File.Delete(TmpPath);
+                    }
+                }
+                catch
+                {
+                }
+                throw;
+            }
+        }
+
+        public static bool TryReadJson<T>(string path, out T? value)
+        {
+            value = default;
+
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            if (TryDeserializeFile(path, out value))
+            {
+                return true;
+            }
+
+            Logger.Log($"[FilesManager] {path} is corrupt, trying {path}.bak");
+            try
+            {
+                string CorruptPath = path + ".corrupt-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+                if (File.Exists(CorruptPath))
+                {
+                    CorruptPath += "-" + Guid.NewGuid().ToString("N");
+                }
+                File.Move(path, CorruptPath);
+            }
+            catch (Exception e)
+            {
+                Logger.Log($"[FilesManager] Failed to quarantine {path}: {e.Message}");
+            }
+
+            if (TryDeserializeFile(path + ".bak", out value))
+            {
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static bool TryDeserializeFile<T>(string path, out T? value)
+        {
+            value = default;
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                string JSON = File.ReadAllText(path);
+                if (string.IsNullOrWhiteSpace(JSON))
+                {
+                    Logger.Log($"[FilesManager] File {path} is empty");
+                    return false;
+                }
+
+                value = JsonSerializer.Deserialize<T>(JSON);
+                return value != null;
+            }
+            catch (Exception e)
+            {
+                Logger.Log($"[FilesManager] Failed to load {path}: {e.Message}");
+                return false;
+            }
+        }
+
         public static void SaveSceneToFile(SceneData.SaveData SaveData, Server ServerInstance)
         {
             JsonSerializerOptions Options = new JsonSerializerOptions();
@@ -439,7 +542,7 @@ namespace SkyCoopServer
                     Directory.CreateDirectory($"{s_SaveDirectory}/{SeedName}/Scenes");
                 }
                 
-                File.WriteAllText($"{s_SaveDirectory}/{SeedName}/Scenes/{SaveData.SceneName}", JSON);
+                WriteAllTextAtomic($"{s_SaveDirectory}/{SeedName}/Scenes/{SaveData.SceneName}", JSON);
                 return;
             }
             catch (Exception e)
@@ -451,33 +554,15 @@ namespace SkyCoopServer
         public static SceneData.SaveData LoadSceneFromFile(string SceneName, Server ServerInstance)
         {
             string Path = $"{s_SaveDirectory}/{ServerInstance.m_Config.m_Seed.ToString()}/Scenes/{SceneName}";
-            string JSON = "";
 
             Logger.Log($"[FilesManager] Loading file {Path}");
-            if (File.Exists(Path))
+            if (TryReadJson<SceneData.SaveData>(Path, out SceneData.SaveData? SaveData))
             {
-                try
-                {
-                    JSON = File.ReadAllText(Path);
-                }
-                catch (Exception e)
-                {
-                    Logger.Log($"[FilesManager] Failed to load {Path}: {e.Message}");
-                    return null;
-                }
-            }
-            else
-            {
-                Logger.Log($"[FilesManager] File {Path} not exist");
-                return null;
+                return SaveData;
             }
 
-            if (string.IsNullOrEmpty(JSON))
-            {
-                Logger.Log($"[FilesManager] File {Path} is empty");
-                return null;
-            }
-            return JsonSerializer.Deserialize<SceneData.SaveData>(JSON);
+            Logger.Log($"[FilesManager] Failed to load {Path}");
+            return null;
         }
 
         public static void SaveServerToFile(Server.SaveData SaveData, Server ServerInstance)
@@ -494,7 +579,7 @@ namespace SkyCoopServer
                     Directory.CreateDirectory($"{s_SaveDirectory}/{SeedName}");
                 }
 
-                File.WriteAllText($"{s_SaveDirectory}/{SeedName}/ServerData", JSON);
+                WriteAllTextAtomic($"{s_SaveDirectory}/{SeedName}/ServerData", JSON);
                 return;
             }
             catch (Exception e)
@@ -506,33 +591,15 @@ namespace SkyCoopServer
         public static Server.SaveData LoadServerFromFile(int Seed)
         {
             string Path = $"{s_SaveDirectory}/{Seed.ToString()}/ServerData";
-            string JSON = "";
 
             Logger.Log($"[FilesManager] Loading file {Path}");
-            if (File.Exists(Path))
+            if (TryReadJson<Server.SaveData>(Path, out Server.SaveData? SaveData))
             {
-                try
-                {
-                    JSON = File.ReadAllText(Path);
-                }
-                catch (Exception e)
-                {
-                    Logger.Log($"[FilesManager] Failed to load {Path}: {e.Message}");
-                    return null;
-                }
-            }
-            else
-            {
-                Logger.Log($"[FilesManager] File {Path} not exist");
-                return null;
+                return SaveData;
             }
 
-            if (string.IsNullOrEmpty(JSON))
-            {
-                Logger.Log($"[FilesManager] File {Path} is empty");
-                return null;
-            }
-            return JsonSerializer.Deserialize<Server.SaveData>(JSON);
+            Logger.Log($"[FilesManager] Failed to load {Path}");
+            return null;
         }
 
         public class SaveDataAndSeed
@@ -579,34 +646,13 @@ namespace SkyCoopServer
         public static DataStr.ServerConfig LoadServerCFG()
         {
             string Path = s_ServerConfigLocation;
-            string JSON = "";
 
             Logger.Log($"[FilesManager] Loading file {Path}");
-            if (File.Exists(Path))
+            if (!TryReadJson<DataStr.ServerConfigJSON>(Path, out DataStr.ServerConfigJSON? Proxy) || Proxy == null)
             {
-                try
-                {
-                    JSON = File.ReadAllText(Path);
-                }
-                catch (Exception e)
-                {
-                    Logger.Log($"[FilesManager] Failed to load {Path}: {e.Message}");
-                    return null;
-                }
-            }
-            else
-            {
-                Logger.Log($"[FilesManager] File {Path} not exist");
+                Logger.Log($"[FilesManager] Failed to load {Path}");
                 return null;
             }
-
-            if (string.IsNullOrEmpty(JSON))
-            {
-                Logger.Log($"[FilesManager] File {Path} is empty");
-                return null;
-            }
-
-            ServerConfigJSON Proxy = JsonSerializer.Deserialize<DataStr.ServerConfigJSON>(JSON);
 
             return Proxy.Load();
         }

@@ -32,6 +32,21 @@ namespace SkyCoopServer
             }
         }
 
+        public bool EnsureSlot(int id)
+        {
+            if (id < 0)
+            {
+                return false;
+            }
+
+            while (m_Players.Count <= id)
+            {
+                m_Players.Add(new DataStr.PlayerData(m_Players.Count));
+            }
+
+            return true;
+        }
+
         public DataStr.PlayerData GetPlayer(int Index)
         {
             if(Index < 0)
@@ -63,32 +78,33 @@ namespace SkyCoopServer
 
         public bool SetPlayerName(int Index, string Name)
         {
-            DataStr.PlayerData Player = m_Players[Index];
-            if (Player != null)
+            DataStr.PlayerData Player = GetPlayer(Index);
+            if (Player == null)
             {
-                if (NameIsFree(Name))
-                {
-                    Player.m_PlayerName = Name;
-                }
-                else
-                {
-                    SkyCoopServer.Logger.Log(ConsoleColor.Red,$"Client {Index} trying to log in as {Name}, but name is already busy");
+                return false;
+            }
+            if (NameIsFree(Name))
+            {
+                Player.m_PlayerName = Name;
+            }
+            else
+            {
+                SkyCoopServer.Logger.Log(ConsoleColor.Red,$"Client {Index} trying to log in as {Name}, but name is already busy");
 
-                    int Num = 2;
-                    while (!NameIsFree($"{Name} ({Num})"))
+                int Num = 2;
+                while (!NameIsFree($"{Name} ({Num})"))
+                {
+                    Num++;
+
+                    if(Num > 100)
                     {
-                        Num++;
-
-                        if(Num > 100)
-                        {
-                            Name = "Ilegal name";
-                            s_Server.DisconnectPlayer(Index, "Bad nickname!");
-                            return false;
-                        }
+                        Name = "Ilegal name";
+                        s_Server.DisconnectPlayer(Index, "Bad nickname!");
+                        return false;
                     }
-                    Player.m_PlayerName = $"{Name} ({Num})";
-                    SkyCoopServer.Logger.Log(ConsoleColor.Yellow, $"Client {Index} renamed to {Name}");
                 }
+                Player.m_PlayerName = $"{Name} ({Num})";
+                SkyCoopServer.Logger.Log(ConsoleColor.Yellow, $"Client {Index} renamed to {Name}");
             }
             return true;
         }
@@ -482,6 +498,11 @@ namespace SkyCoopServer
 
         public void OnPlayerDisconnect(int PlayerID)
         {
+            if (GetPlayer(PlayerID) == null)
+            {
+                return;
+            }
+
             PlayersSquad LeftSquad = GetSquadPlayerIn(PlayerID);
             m_Players[PlayerID] = new PlayerData(PlayerID);
 

@@ -118,7 +118,7 @@ namespace SkyCoop
 
             if (s_packetHandlers.TryGetValue(PacketID, out Handle))
             {
-                Handle(Reader);
+                PacketDispatch.Invoke(PacketID, () => Handle(Reader), msg => SkyCoop.Logger.Log(ConsoleColor.Red, msg));
             }
         }
 
@@ -244,26 +244,39 @@ namespace SkyCoop
 
             m_Listener.NetworkReceiveEvent += (fromPeer, dataReader, channel, deliveryMethod) =>
             {
-                m_HostEndPoint = fromPeer;
-                int PacketID = dataReader.GetInt();
-                //SkyCoop.Logger.Log(ConsoleColor.Cyan, "PacketID " + PacketID);
-                if (m_IsReady)
+                bool Retained = false;
+                try
                 {
-                    ExecutePacketEvent(PacketID, dataReader);
-                    dataReader.Recycle();
-                    return;
+                    PacketDispatch.Guard("NetworkReceiveEvent", () =>
+                    {
+                        m_HostEndPoint = fromPeer;
+                        int PacketID = dataReader.GetInt();
+                        //SkyCoop.Logger.Log(ConsoleColor.Cyan, "PacketID " + PacketID);
+                        if (m_IsReady)
+                        {
+                            ExecutePacketEvent(PacketID, dataReader);
+                            return;
+                        }
+                        else
+                        {
+                            if (PacketID == 0 || PacketID == 1)
+                            {
+                                ExecutePacketEvent(PacketID, dataReader);
+                            }
+                            else
+                            {
+                                m_DelayedPackage.Add(new DelayedPackage(PacketID, dataReader));
+                                Retained = true;
+                                SkyCoop.Logger.Log(ConsoleColor.Yellow, "Pushing "+PacketID+" to delay");
+                            }
+                        }
+                    }, msg => SkyCoop.Logger.Log(ConsoleColor.Red, msg));
                 }
-                else
+                finally
                 {
-                    if (PacketID == 0 || PacketID == 1)
+                    if (!Retained)
                     {
-                        ExecutePacketEvent(PacketID, dataReader);
                         dataReader.Recycle();
-                    }
-                    else
-                    {
-                        m_DelayedPackage.Add(new DelayedPackage(PacketID, dataReader));
-                        SkyCoop.Logger.Log(ConsoleColor.Yellow, "Pushing "+PacketID+" to delay");
                     }
                 }
             };

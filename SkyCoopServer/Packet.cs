@@ -133,6 +133,8 @@ namespace SkyCoopServer
 
         public const string c_Key = "public1";
 
+        public const int c_ProtocolVersion = 1;
+
         public enum TypeVoice
         {
             Verification,

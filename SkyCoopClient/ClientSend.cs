@@ -22,6 +22,7 @@ namespace SkyCoop
             NetDataWriter writer = new NetDataWriter();
             writer.Put((int)Packet.Type.Welcome);
             writer.Put(ModMain.GetNickName());
+            writer.Put(Packet.c_ProtocolVersion);
             SendToHost(writer);
         }
 
