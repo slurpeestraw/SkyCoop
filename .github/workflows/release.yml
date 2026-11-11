@@ -1,4 +1,4 @@
-name: Build and Release Server
+name: Build and Release
 
 on:
   push:
@@ -19,10 +19,11 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
   UPSTREAM_REPOSITORY: Filigrani/SkyCoop
   UPSTREAM_RELEASE_TAG: RebornV1
+  MELONLOADER_VERSION: "0.7.3"
 
 jobs:
   prepare-data:
-    name: Fetch upstream server data
+    name: Fetch upstream bundle
     runs-on: ubuntu-latest
     steps:
       - name: Download upstream release
@@ -47,6 +48,90 @@ jobs:
         with:
           name: skycoop-data
           path: skycoop-data.tar.gz
+          if-no-files-found: error
+
+      - name: Upload upstream bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: skycoop-upstream
+          path: upstream.zip
+          if-no-files-found: error
+
+  client:
+    name: Build client bundle
+    needs: prepare-data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download upstream bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: skycoop-upstream
+          path: .
+
+      - name: Download MelonLoader
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          gh release download "v${MELONLOADER_VERSION}" \
+            --repo LavaGang/MelonLoader \
+            --pattern 'MelonLoader.x64.zip' \
+            --output melonloader.zip
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Prepare client bundle
+        run: |
+          set -euo pipefail
+
+          rm -rf client-bundle melonloader
+          mkdir -p client-bundle melonloader
+
+          unzip -q upstream.zip -d client-bundle
+          unzip -q melonloader.zip -d melonloader
+
+          rm -rf client-bundle/MelonLoader
+          cp -a melonloader/MelonLoader client-bundle/MelonLoader
+          cp melonloader/version.dll client-bundle/version.dll
+
+          mkdir -p dependencies
+          cp client-bundle/Mods/ModSettings.dll dependencies/ModSettings.dll
+
+      - name: Build client
+        run: dotnet build SkyCoopClient/SkyCoopClient.csproj -c Release
+
+      - name: Replace client binaries
+        run: |
+          set -euo pipefail
+
+          cp Output/Release/SkyCoopClient.dll client-bundle/Mods/SkyCoopClient.dll
+          cp Output/Release/SkyCoopServer.dll client-bundle/Mods/SkyCoopServer.dll
+
+      - name: Archive client bundle
+        run: |
+          cd client-bundle
+          zip -qr ../SkyCoopClient-win-x64.zip .
+
+      - name: Upload client bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkyCoopClient-win-x64
+          path: SkyCoopClient-win-x64.zip
           if-no-files-found: error
 
   build:
@@ -116,7 +201,9 @@ jobs:
   release:
     name: Publish GitHub release
     if: startsWith(github.ref, 'refs/tags/')
-    needs: build
+    needs:
+      - build
+      - client
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -125,6 +212,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: SkyCoop*
           path: artifacts
           merge-multiple: true
 

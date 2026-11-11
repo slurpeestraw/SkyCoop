@@ -46,7 +46,7 @@
 	    <HintPath>..\dependencies\ModSettings.dll</HintPath>
 	  </Reference>
 	</ItemGroup>
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="Exists('postbuild.cmd') And '$(OS)' == 'Windows_NT'">
 	  <Exec Command="postbuild.cmd" />
 	</Target>
 </Project>
