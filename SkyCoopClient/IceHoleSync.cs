@@ -46,7 +46,7 @@ namespace SkyCoopClient
             try
             {
                 string SceneName = ModMain.GetCurrentSceneName();
-                if (string.IsNullOrEmpty(SceneName) || SceneName == "Empty" || SceneName.StartsWith("Menu"))
+                if (string.IsNullOrEmpty(SceneName) || !ModMain.IsGameplayScene(SceneName))
                 {
                     return;
                 }
@@ -152,6 +152,17 @@ namespace SkyCoopClient
             }
         }
 
+        [HarmonyLib.HarmonyPatch(typeof(IceFishingHole), "SetNormalizedFrozen")]
+        private static class IceFishingHole_SetNormalizedFrozen
+        {
+            private static void Postfix(IceFishingHole __instance)
+            {
+                if (!ModMain.IsMultiplayer()) { return; }
+
+                MaybeSend(__instance);
+            }
+        }
+
         [HarmonyLib.HarmonyPatch(typeof(IceFishingHole), "StartFishing")]
         private static class IceFishingHole_StartFishing
         {
@@ -188,9 +199,9 @@ namespace SkyCoopClient
         [HarmonyLib.HarmonyPatch(typeof(Panel_IceFishingHoleClear), "OnBreakIceComplete")]
         private static class Panel_IceFishingHoleClear_OnBreakIceComplete
         {
-            private static void Postfix(Panel_IceFishingHoleClear __instance, bool success)
+            private static void Postfix(Panel_IceFishingHoleClear __instance, bool playerCancel)
             {
-                if (!success || !ModMain.IsMultiplayer() || __instance == null || __instance.m_IsBuildingHole || __instance.m_IceFishingHole == null)
+                if (playerCancel || !ModMain.IsMultiplayer() || __instance == null || __instance.m_IsBuildingHole || __instance.m_IceFishingHole == null)
                 {
                     return;
                 }

@@ -449,7 +449,7 @@ namespace SkyCoopServer
                 return;
             }
 
-            if(SceneName == "" || SceneName == "Empty" || SceneName.StartsWith("Menu"))
+            if (SceneName == "" || SceneName == "Empty" || SceneName == "Boot" || SceneName.StartsWith("MainMenu"))
             {
                 ServerInstance.m_PlayersData.SetGameplayState(Client.Id, PlayerData.GamePlayState.Unassigned);
                 return;
@@ -1569,7 +1569,7 @@ namespace SkyCoopServer
         {
             PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(Client);
 
-            if (Player == null || string.IsNullOrEmpty(Player.m_Scene) || Player.m_Scene == "Empty" || Player.m_Scene.StartsWith("Menu"))
+            if (Player == null || string.IsNullOrEmpty(Player.m_Scene) || Player.m_Scene == "Empty" || Player.m_Scene == "Boot" || Player.m_Scene.StartsWith("MainMenu"))
             {
                 return;
             }
