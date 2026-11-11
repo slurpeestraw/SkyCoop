@@ -103,3 +103,6 @@ crashlytics-build.properties
 [Nn]ot[Ss]hip/
 
 !SkyCoopServerHost/SkyCoopServerHost.csproj
+!SkyCoopServer.Tests/SkyCoopServer.Tests.csproj
+/SkyCoopServer.Tests/bin/
+/SkyCoopServer.Tests/obj/
