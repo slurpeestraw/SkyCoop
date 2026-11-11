@@ -17,10 +17,41 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+  UPSTREAM_REPOSITORY: Filigrani/SkyCoop
+  UPSTREAM_RELEASE_TAG: RebornV1
 
 jobs:
+  prepare-data:
+    name: Fetch upstream server data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download upstream release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          gh release download "$UPSTREAM_RELEASE_TAG" \
+            --repo "$UPSTREAM_REPOSITORY" \
+            --pattern 'SkyCoop*.zip' \
+            --output upstream.zip
+
+          mkdir -p upstream
+          unzip -q upstream.zip 'Mods/SkyModData/*' -d upstream
+          test -d upstream/Mods/SkyModData
+
+          tar -czf skycoop-data.tar.gz -C upstream/Mods SkyModData
+
+      - name: Upload server data
+        uses: actions/upload-artifact@v4
+        with:
+          name: skycoop-data
+          path: skycoop-data.tar.gz
+          if-no-files-found: error
+
   build:
     name: Build ${{ matrix.rid }}
+    needs: prepare-data
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -41,6 +72,12 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Download server data
+        uses: actions/download-artifact@v4
+        with:
+          name: skycoop-data
+          path: .
+
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -56,6 +93,12 @@ jobs:
           -r ${{ matrix.rid }}
           --self-contained true
           -o publish/${{ matrix.rid }}
+
+      - name: Bundle server data
+        run: |
+          mkdir -p upstream-data
+          tar -xzf skycoop-data.tar.gz -C upstream-data
+          cp -a upstream-data/SkyModData "publish/${{ matrix.rid }}/"
 
       - name: Archive
         shell: bash

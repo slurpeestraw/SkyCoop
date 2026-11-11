@@ -66,7 +66,11 @@ The archive includes a `Server.json` next to the executable:
 | `ExperienceMode` | Experience mode, e.g. `Stalker`. |
 | `Cheats` | Whether cheats are allowed. |
 
-The server creates a `SkyModData` folder next to the executable. Saves are stored in `SkyModData/ServerSaves`. Server game modes, maps, loot tables, and weather profiles are loaded from the matching folders under `SkyModData`.
+The server uses a `SkyModData` folder next to the executable. Saves are stored in `SkyModData/ServerSaves`. Game modes, maps, loot tables, and weather profiles are loaded from the matching folders under `SkyModData`.
+
+Release archives are self-contained: the GitHub Actions workflow downloads the upstream Reborn `SkyModData` (game modes, weather, gear and wildlife spawns, and dupe lists) from the pinned upstream release and bundles it into every server archive. The upstream release tag is set with `UPSTREAM_RELEASE_TAG` in `.github/workflows/release.yml`; update it when syncing to a newer upstream Reborn release. Upstream does not currently ship `Maps` or `LootTables`, so the server creates those folders empty and you can add custom data there.
+
+Local source builds do not download the upstream data. Copy it into `SkyModData` yourself if you want to run a locally built server.
 
 ## Building the server from source
 
