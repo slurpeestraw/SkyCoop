@@ -34,6 +34,14 @@ namespace SkyCoopServer
             public string m_SceneToSpawn = "";
             public string m_GameMode = "Sandbox";
             public bool m_CheatsAllowed = true;
+            public string m_AdminPassword = "";
+            public string m_JoinPassword = "";
+            public bool m_TrustLoopback = true;
+
+            public string GetConnectionKey()
+            {
+                return string.IsNullOrEmpty(m_JoinPassword) ? Packet.c_Key : m_JoinPassword;
+            }
         }
 
         public class ServerConfigJSON
@@ -45,6 +53,9 @@ namespace SkyCoopServer
             public int VoicePort { get; set; }
             public string ExperienceMode { get; set; }
             public bool Cheats { get; set; }
+            public string AdminPassword { get; set; } = "";
+            public string JoinPassword { get; set; } = "";
+            public bool? TrustLoopback { get; set; }
 
             public ServerConfig Load()
             {
@@ -106,6 +117,18 @@ namespace SkyCoopServer
                 }
 
                 CFG.m_CheatsAllowed = Cheats;
+
+                if (!string.IsNullOrEmpty(AdminPassword))
+                {
+                    CFG.m_AdminPassword = AdminPassword;
+                }
+
+                if (!string.IsNullOrEmpty(JoinPassword))
+                {
+                    CFG.m_JoinPassword = JoinPassword;
+                }
+
+                CFG.m_TrustLoopback = TrustLoopback ?? true;
 
                 return CFG;
             }
@@ -530,6 +553,7 @@ namespace SkyCoopServer
             public GamePlayState m_GamePlayState = GamePlayState.Unassigned;
 
             public bool m_IsWorking = false;
+            public bool m_IsOperator = false;
 
             public enum GamePlayState
             {
@@ -542,6 +566,7 @@ namespace SkyCoopServer
             public PlayerData(int PlayerID)
             {
                 m_PlayerID = PlayerID;
+                m_IsOperator = false;
             }
 
             public void SetGameplayState(GamePlayState State, Server ServerInstance)

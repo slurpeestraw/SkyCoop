@@ -29,6 +29,14 @@ namespace SkyCoopServer
 
             string NewPlayerName = ServerInstance.m_PlayersData.GetPlayer(Client.Id).m_PlayerName;
             Logger.Log(ConsoleColor.Green, $"[ServerHandle] Сlient {Client.Id} connected under name: {NewPlayerName}");
+
+            PlayerData NewPlayer = ServerInstance.GetPlayerDataByNetPeer(Client);
+            if (NewPlayer != null && ServerInstance.m_Config.m_TrustLoopback && AdminAuth.IsLoopback(Client.Address))
+            {
+                NewPlayer.m_IsOperator = true;
+                Logger.Log(ConsoleColor.Green, $"[ServerHandle] {NewPlayerName} is operator (loopback)");
+            }
+
             ServerSend.ServerConfig(Client, ServerInstance.m_Config, ServerInstance.m_Rules);
             ServerSend.SendClientName(Client, Client.Id, NewPlayerName);
 
@@ -1046,10 +1054,47 @@ namespace SkyCoopServer
         public static void ClientSV_CMD(NetPeer Client, NetDataReader Reader, Server ServerInstance)
         {
             PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(Client);
-            if (Player != null && ServerInstance.m_PlayersData.PlayerCanBeTrusted(Player))
+            if (Player == null)
             {
-                ProcessCMD(ServerInstance, Reader.GetString(), Player);
+                return;
             }
+
+            string Command = Reader.GetString();
+
+            if (CommandText.TryParseLogin(Command, out string Attempt))
+            {
+                Logger.Log(ConsoleColor.Cyan, $"[ServerHandle] Player {Player.m_PlayerName} (ID {Player.m_PlayerID}) login attempt");
+
+                if (AdminAuth.PasswordMatches(ServerInstance.m_Config.m_AdminPassword, Attempt))
+                {
+                    Player.m_IsOperator = true;
+                    ServerInstance.m_LoginThrottle.Reset(Client.Address);
+                    Logger.Log(ConsoleColor.Green, $"[ServerHandle] Player {Player.m_PlayerName} (ID {Player.m_PlayerID}) login ok");
+                    ServerSend.SendChatMessage(Client, "Logged in as operator");
+                }
+                else
+                {
+                    Logger.Log(ConsoleColor.Yellow, $"[ServerHandle] Player {Player.m_PlayerName} (ID {Player.m_PlayerID}) login failed");
+                    if (ServerInstance.m_LoginThrottle.RecordFailure(Client.Address, DateTime.UtcNow))
+                    {
+                        ServerInstance.DisconnectPlayer(Client, "Too many failed logins");
+                    }
+                    else
+                    {
+                        ServerSend.SendChatMessage(Client, "Login failed");
+                    }
+                }
+
+                return;
+            }
+
+            if (!AdminAuth.IsAllowed(Player, Command))
+            {
+                ServerSend.SendChatMessage(Client, "Not allowed: operator only");
+                return;
+            }
+
+            ProcessCMD(ServerInstance, Command, Player);
         }
 
         public static void ClientSquadHealth(NetPeer Client, NetDataReader Reader, Server ServerInstance)

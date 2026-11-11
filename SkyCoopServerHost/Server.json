@@ -5,5 +5,8 @@
   "Port": 37855,
   "VoicePort": 0,
   "ExperienceMode": "Stalker",
-  "Cheats": false
+  "Cheats": false,
+  "AdminPassword": "",
+  "JoinPassword": "",
+  "TrustLoopback": true
 }

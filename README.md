@@ -52,7 +52,10 @@ The archive includes a `Server.json` next to the executable:
   "Port": 37855,
   "VoicePort": 0,
   "ExperienceMode": "Stalker",
-  "Cheats": false
+  "Cheats": false,
+  "AdminPassword": "",
+  "JoinPassword": "",
+  "TrustLoopback": true
 }
 ```
 
@@ -65,6 +68,15 @@ The archive includes a `Server.json` next to the executable:
 | `VoicePort` | Voice chat port. `0` disables voice chat. |
 | `ExperienceMode` | Experience mode, e.g. `Stalker`. |
 | `Cheats` | Whether cheats are allowed. |
+| `AdminPassword` | Password that grants operator commands via `sv_cmd login <password>`. Empty means no password login; loopback peers are operators when `TrustLoopback` is true. |
+| `JoinPassword` | Connection password clients must supply. Empty means the default key is used. |
+| `TrustLoopback` | When true (default), connections from the server machine are operators without logging in. |
+
+With `JoinPassword` set, clients enter the password as part of the server address: `password@host:port`. The address can also be `host:port` or `host` (the default port is `37855`). The password is everything before the last `@`, so it may contain `@` characters; the host may be an IPv4 address, a hostname, or an IPv6 address in brackets, e.g. `password@[::1]:37855`. `JoinPassword` protects only the game port; the voice server still uses the default voice key and is not protected by it.
+
+Operators log in from the in-game console with `sv_cmd login <password>`. Successful login unlocks server operator commands sent through `sv_cmd`. Failed logins are throttled and repeated failures disconnect the client. Set `TrustLoopback` to `false` to require the admin password even for connections from the server machine.
+
+Passwords are never sent to clients and are never written to the log. Set a strong `AdminPassword` and `JoinPassword` for internet-facing servers.
 
 The server uses a `SkyModData` folder next to the executable. Saves are stored in `SkyModData/ServerSaves`. Game modes, maps, loot tables, and weather profiles are loaded from the matching folders under `SkyModData`.
 

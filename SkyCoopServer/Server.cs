@@ -14,6 +14,7 @@ namespace SkyCoopServer
         public NetworkHelper m_NetworkHelper;
 
         public DataStr.ServerConfig m_Config = new DataStr.ServerConfig();
+        public AdminAuth.LoginThrottle m_LoginThrottle = new AdminAuth.LoginThrottle();
         public DataStr.GameRules m_Rules = new DataStr.GameRules();
         public EventBasedNetListener m_Listener;
         public NetManager m_Instance;
@@ -681,7 +682,7 @@ namespace SkyCoopServer
             }
         }
 
-        public void StartServer(int port = c_DefaultPort, int maxPlayers = 10, string key = Packet.c_Key)
+        public void StartServer(int port = c_DefaultPort, int maxPlayers = 10, string? key = null)
         {
             ChangeGameMode(m_Config.m_GameMode);
 
@@ -690,12 +691,13 @@ namespace SkyCoopServer
 
             m_PlayersData.InitilizePlayers(maxPlayers);
             Logger.Log(ConsoleColor.Green, "[Server] Starting server");
+            Logger.Log(ConsoleColor.Green, $"[Server] Join password: {(string.IsNullOrEmpty(m_Config.m_JoinPassword) ? "none" : "set")}");
             m_Instance.Start(port);
 
             m_Listener.ConnectionRequestEvent += request =>
             {
                 if (m_Instance.ConnectedPeersCount < maxPlayers)
-                    request.AcceptIfKey(key);
+                    request.AcceptIfKey(key ?? m_Config.GetConnectionKey());
                 else
                     request.Reject();
             };

@@ -3,6 +3,7 @@ using Il2CppTLD.Gear;
 using Il2CppTLD.Scenes;
 using SkyCoop;
 using SkyCoopServer;
+using System.Text;
 using System.Text.Json;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -100,7 +101,22 @@ namespace SkyCoopClient
 
         public static void SV_CMD()
         {
-            ClientSend.SendSV_CMD(uConsole.GetString());
+            Il2CppCollection.List<string> parameters = uConsole.GetAllParameters();
+            StringBuilder command = new StringBuilder();
+            if (parameters != null)
+            {
+                for (int i = 0; i < parameters.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        command.Append(' ');
+                    }
+
+                    command.Append(parameters[i]);
+                }
+            }
+
+            ClientSend.SendSV_CMD(command.ToString());
         }
 
         public static void GiveCampfireKit()

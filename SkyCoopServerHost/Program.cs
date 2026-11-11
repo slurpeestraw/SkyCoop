@@ -35,7 +35,7 @@ namespace SkyCoopServerHost
                 DataStr.ServerConfig config = FilesManager.LoadServerCFG() ?? new DataStr.ServerConfig();
 
                 s_Server = new Server(config);
-                s_Server.StartServer(config.m_Port, config.m_MaxPlayers);
+                s_Server.StartServer(config.m_Port, config.m_MaxPlayers, config.GetConnectionKey());
 
                 Logger.Log(ConsoleColor.Green, $"[Host] Server is running on port {config.m_Port}. Press Ctrl+C to stop.");
 

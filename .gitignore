@@ -106,3 +106,8 @@ crashlytics-build.properties
 !SkyCoopServer.Tests/SkyCoopServer.Tests.csproj
 /SkyCoopServer.Tests/bin/
 /SkyCoopServer.Tests/obj/
+
+# Build output for the dedicated host and the shared Output folder
+/Output/
+/SkyCoopServerHost/bin/
+/SkyCoopServerHost/obj/

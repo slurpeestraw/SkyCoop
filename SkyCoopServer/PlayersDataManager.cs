@@ -1116,7 +1116,7 @@ namespace SkyCoopServer
         public bool PlayerCanBeTrusted(PlayerData Player)
         {
             // Main idea is to check if player is operator that can use cheats.
-            return true;
+            return Player != null && Player.m_IsOperator;
         }
 
         public static List<PlayerData> GetPlayersOnScene(string SceneName, Server ServerInstance, bool IncludeDead = false)

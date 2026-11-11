@@ -174,7 +174,7 @@ namespace SkyCoop
                 ModMain.Server = new SkyCoopServer.Server(CFG.Load());
                 ModMain.Server.StartServer();
                 Thread.Sleep(15);
-                ModMain.Client.ConnectToServer("localhost");
+                ModMain.Client.ConnectToServer("localhost", Client.m_ConnectPort, ModMain.Server.m_Config.GetConnectionKey());
                 SetMenuOverrideMode(SandboxMenuOverride.Multiplayer);
                 //OpenSandbox();
             }

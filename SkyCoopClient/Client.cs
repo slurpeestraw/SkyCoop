@@ -202,6 +202,7 @@ namespace SkyCoop
                             Message = "Disconnected by my request.";
                             break;
                         case DisconnectReason.ConnectionRejected:
+                            Message = "Rejected by server (server full or wrong/missing join password)";
                             break;
                         case DisconnectReason.InvalidProtocol:
                             Message = "Invalid connection protocol.";
@@ -323,31 +324,19 @@ namespace SkyCoop
 
         public void ConnectToServer(string address)
         {
-            int Port = m_ConnectPort;
-            string IP = "127.0.0.1";
-
-            if (!string.IsNullOrEmpty(address))
+            if (!ServerAddress.TryParse(address, m_ConnectPort, out string host, out int port, out string key))
             {
-                if (address.Contains(":"))
-                {
-                    char seperator = Convert.ToChar(":");
-
-                    string[] sliced = address.Split(seperator);
-                    IP = sliced[0];
-                    Port = int.Parse(sliced[1]);
-                } else
-                {
-                    IP = address;
-                    Port = m_ConnectPort;
-                }
+                MenuHook.DoOKMessage("Invalid address", "Use host, host:port or password@host:port");
+                return;
             }
-            ConnectToServer(IP, Port);
+
+            ConnectToServer(host, port, key);
         }
 
         public void ConnectToServer(string ip, int port, string key = Packet.c_Key)
         {
             MenuHook.DoPleaseWait("Connecting...", "Trying to connect to "+ip+":"+port);
-            Logger.Log($"Trying to connect to {ip}:{port} with key: {key}");
+            Logger.Log($"Trying to connect to {ip}:{port} (join password: {(key == Packet.c_Key ? "none" : "set")})");
             Logger.Log("m_Instance.DisconnectTimeout "+ m_Instance.DisconnectTimeout);
             m_Instance.Start();
             m_MyEndPoint = m_Instance.Connect(ip, port, key);

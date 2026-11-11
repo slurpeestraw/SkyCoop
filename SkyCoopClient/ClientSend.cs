@@ -465,7 +465,7 @@ namespace SkyCoop
         {
             NetDataWriter writer = new NetDataWriter();
             writer.Put((int)Packet.Type.ClientSV_CMD);
-            writer.Put(cmd.ToLower());
+            writer.Put(CommandText.NormalizeClientCommand(cmd));
             SendToHost(writer);
         }
 
