@@ -1569,7 +1569,7 @@ namespace SkyCoopServer
         {
             PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(Client);
 
-            if (Player == null)
+            if (Player == null || string.IsNullOrEmpty(Player.m_Scene) || Player.m_Scene == "Empty" || Player.m_Scene.StartsWith("Menu"))
             {
                 return;
             }

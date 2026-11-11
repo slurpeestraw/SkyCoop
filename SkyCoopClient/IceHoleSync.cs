@@ -38,37 +38,68 @@ namespace SkyCoopClient
                 return;
             }
 
-            ClientSend.SendIceHoleStatus(
-                GetKey(Hole),
-                Hole.transform.position,
-                Hole.NormalizedFrozen,
-                (int)Hole.m_State,
-                Hole.m_MinutesSinceLastClearing,
-                Hole.PauseFreezing);
-        }
-
-        public static void HandleIceHoleStatus(string Key, Vector3 Position, float NormalizedFrozen, int FishingState, float MinutesSinceLastClearing, bool PauseFreezing)
-        {
-            IceFishingHole Hole = FindHole(Key, Position);
-            if (Hole == null)
+            if (Minimalizer.s_LoadingFlag || Minimalizer.s_FramesDelayBeforeSendNewScene > 0)
             {
                 return;
             }
 
-            float Frozen = Mathf.Clamp01(NormalizedFrozen);
-
-            s_ApplyingRemote = true;
             try
             {
-                Hole.SetNormalizedFrozen(Frozen);
-                Hole.m_FrozenPercent = Mathf.RoundToInt(Frozen * 100f);
-                Hole.m_MinutesSinceLastClearing = MinutesSinceLastClearing;
-                Hole.PauseFreezing = PauseFreezing;
-                Hole.m_State = (FishingState)FishingState;
+                string SceneName = ModMain.GetCurrentSceneName();
+                if (string.IsNullOrEmpty(SceneName) || SceneName == "Empty" || SceneName.StartsWith("Menu"))
+                {
+                    return;
+                }
+
+                ClientSend.SendIceHoleStatus(
+                    GetKey(Hole),
+                    Hole.transform.position,
+                    Hole.NormalizedFrozen,
+                    (int)Hole.m_State,
+                    Hole.m_MinutesSinceLastClearing,
+                    Hole.PauseFreezing);
             }
-            finally
+            catch (Exception Exception)
+            {
+                SkyCoop.Logger.Log(ConsoleColor.Red, $"[IceHoleSync] Failed to send ice hole status: {Exception.Message}");
+            }
+        }
+
+        public static void HandleIceHoleStatus(string Key, Vector3 Position, float NormalizedFrozen, int FishingState, float MinutesSinceLastClearing, bool PauseFreezing)
+        {
+            if (Minimalizer.s_LoadingFlag)
+            {
+                return;
+            }
+
+            try
+            {
+                IceFishingHole Hole = FindHole(Key, Position);
+                if (Hole == null)
+                {
+                    return;
+                }
+
+                float Frozen = Mathf.Clamp01(NormalizedFrozen);
+
+                s_ApplyingRemote = true;
+                try
+                {
+                    Hole.SetNormalizedFrozen(Frozen);
+                    Hole.m_FrozenPercent = Mathf.RoundToInt(Frozen * 100f);
+                    Hole.m_MinutesSinceLastClearing = MinutesSinceLastClearing;
+                    Hole.PauseFreezing = PauseFreezing;
+                    Hole.m_State = (FishingState)FishingState;
+                }
+                finally
+                {
+                    s_ApplyingRemote = false;
+                }
+            }
+            catch (Exception Exception)
             {
                 s_ApplyingRemote = false;
+                SkyCoop.Logger.Log(ConsoleColor.Red, $"[IceHoleSync] Failed to apply ice hole status: {Exception.Message}");
             }
         }
 
