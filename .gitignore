@@ -101,3 +101,5 @@ crashlytics-build.properties
 /SkyCoopBundles/[Aa]ssets/[Ss]treamingAssets/aa/*
 
 [Nn]ot[Ss]hip/
+
+!SkyCoopServerHost/SkyCoopServerHost.csproj

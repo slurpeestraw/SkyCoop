@@ -1,0 +1,9 @@
+{
+  "ServerName": "SkyCoop Reborn Server",
+  "MaxPlayers": 10,
+  "Seed": 0,
+  "Port": 37855,
+  "VoicePort": 0,
+  "ExperienceMode": "Stalker",
+  "Cheats": false
+}
