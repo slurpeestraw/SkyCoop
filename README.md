@@ -1,3 +1,10 @@
+> **Branch notice:** This branch includes additional gameplay changes on top of the build and release work kept on `Reborn`:
+>
+> - Ice fishing hole state sync, including fixes for scene transitions and menu scene detection.
+> - Animal corpse sync on death. The owner keeps its local vanilla corpse, remote clients spawn the proper carcass prefab, and spawner-less animals are cleaned up and synced.
+>
+> Corpse sync is currently Phase 1: late join, scene restart, and corpse harvest/pickup/removal are not synced yet.
+
 > **Fork notice:** This is a fork of [Filigrani/SkyCoop](https://github.com/Filigrani/SkyCoop), focused on adding dedicated server builds for Linux/Windows and the GitHub Actions release workflow. All original mod work belongs to the upstream project.
 
 # Game Version Compatibility

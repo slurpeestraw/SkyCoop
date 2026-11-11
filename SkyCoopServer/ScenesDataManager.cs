@@ -1121,7 +1121,7 @@ namespace SkyCoopServer
                 }
 
 
-                foreach (AnimalEntity Animal in Data.m_Animals.Values)
+                foreach (AnimalEntity Animal in Data.m_Animals.Values.ToArray())
                 {
                     Animal.Update(m_ServerInstance, Data);
                 }

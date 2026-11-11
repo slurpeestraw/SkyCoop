@@ -103,9 +103,10 @@ namespace SkyCoopClient
             return null;
         }
 
-        public static GameObject SpawnCorpse(string PrefabName, string GUID, Vector3 Position, Quaternion Rotation, bool PlaySound = false)
+        public static GameObject SpawnCorpse(string PrefabName, string GUID, Vector3 Position, Quaternion Rotation, bool PlaySound = false, GameObject CarcassPrefab = null!)
         {
-            GameObject Prefab = AssetManager.GetAssetFromGame<GameObject>(PrefabName);
+            bool UsingCarcassPrefab = CarcassPrefab != null;
+            GameObject Prefab = UsingCarcassPrefab ? CarcassPrefab : AssetManager.GetAssetFromGame<GameObject>(PrefabName);
             if (Prefab)
             {
                 GameObject Obj = UnityEngine.Object.Instantiate(Prefab, Position, Rotation);
@@ -120,13 +121,12 @@ namespace SkyCoopClient
                     {
                         PdidTable.RuntimeRegister(ObjGUID, GUID);
                     }
-                    Obj.name = PrefabName;
-                    SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{PrefabName} {GUID} corpse spawned");
-                    ClientSend.SendAnimalArrowRequest(GUID);
+                    Obj.name = UsingCarcassPrefab ? Prefab.name : PrefabName;
+                    SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{Obj.name} {GUID} corpse spawned");
 
                     BaseAi Ai = Obj.GetComponent<BaseAi>();
 
-                    if (Ai)
+                    if (Ai && !UsingCarcassPrefab)
                     {
                         Ai.m_CurrentHP = 0;
                         Ai.SetAiMode(AiMode.Dead);
@@ -245,16 +245,24 @@ namespace SkyCoopClient
                 BaseAi Ai = Obj.GetComponent<BaseAi>();
 
                 Obj.transform.SetParent(null);
-                if (Ai.m_NavMeshAgent)
+                if (Ai)
                 {
-                    UnityEngine.Object.Destroy(Ai.m_NavMeshAgent.gameObject);
+                    if (Ai.m_NavMeshAgent)
+                    {
+                        UnityEngine.Object.Destroy(Ai.m_NavMeshAgent.gameObject);
+                    }
+                    if (Ai.m_PathTargetTransform)
+                    {
+                        UnityEngine.Object.Destroy(Ai.m_PathTargetTransform);
+                    }
+                    SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{Obj.name} {GUID} removed {Reason}");
+                    BaseAiManager.Destroy(Ai);
                 }
-                if (Ai.m_PathTargetTransform)
+                else
                 {
-                    UnityEngine.Object.Destroy(Ai.m_PathTargetTransform);
+                    SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{Obj.name} {GUID} removed {Reason}");
+                    UnityEngine.Object.Destroy(Obj);
                 }
-                SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{Obj.name} {GUID} removed {Reason}");
-                BaseAiManager.Destroy(Ai);
             }
         }
 
@@ -267,17 +275,59 @@ namespace SkyCoopClient
             }
         }
 
-        public static void HandleCorpse(string GUID, string Prefab, Vector3 Position, Quaternion Rotation)
+        public static void HandleCorpse(string GUID, string Prefab, Vector3 Position, Quaternion Rotation, bool IsOwner)
         {
-            GameObject Obj = PdidTable.GetGameObject(GUID);
-            if (Obj && Obj.GetComponent<BaseAi>())
+            try
             {
-                HandleRemove(Obj, "(death)");
-                Obj = null;
+                if (Minimalizer.s_LoadingFlag || !ModMain.IsGameplayScene())
+                {
+                    return;
+                }
+
+                GameObject Obj = PdidTable.GetGameObject(GUID);
+
+                if (IsOwner)
+                {
+                    if (Obj)
+                    {
+                        Comps.BaseAiHook Hook = Obj.GetComponent<Comps.BaseAiHook>();
+                        if (Hook)
+                        {
+                            Hook.enabled = false;
+                        }
+                        SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{GUID} corpse left to owner client");
+                        return;
+                    }
+
+                    SkyCoop.Logger.Log(ConsoleColor.Yellow, $"{GUID} owner has no local animal object, spawning corpse from server");
+                }
+
+                GameObject CarcassPrefab = null!;
+                if (Obj)
+                {
+                    BaseAi Ai = Obj.GetComponent<BaseAi>();
+                    if (Ai && Ai.m_CarcassPrefab)
+                    {
+                        CarcassPrefab = Ai.m_CarcassPrefab;
+                    }
+                    HandleRemove(Obj, "(death)");
+
+                    if (PdidTable.GetGameObject(GUID))
+                    {
+                        SkyCoop.Logger.Log(ConsoleColor.Yellow, $"{GUID} still registered after corpse removal, not spawning a duplicate");
+                        return;
+                    }
+                }
+
+                GameObject Corpse = SpawnCorpse(Prefab, GUID, Position, Rotation, false, CarcassPrefab);
+                if (!Corpse)
+                {
+                    SkyCoop.Logger.Log(ConsoleColor.Red, $"[AnimalsManager] Failed to spawn corpse for {GUID} using {Prefab}");
+                }
             }
-            if (Obj == null)
+            catch (Exception Exception)
             {
-                SpawnCorpse(Prefab, GUID, Position, Rotation);
+                SkyCoop.Logger.Log(ConsoleColor.Red, $"[AnimalsManager] Failed to handle corpse for {GUID}: {Exception.Message}");
             }
         }
 

@@ -4744,12 +4744,12 @@ namespace SkyCoopServer
                     if(m_Health <= 0)
                     {
                         m_Health = 0;
-                        Death(ServerInstance, Scene);
+                        Death(ServerInstance, Scene, OwnerHasCorpse: false);
                     }
                 }
             }
 
-            public void Death(Server ServerInstance, SceneData Scene)
+            public void Death(Server ServerInstance, SceneData Scene, bool OwnerHasCorpse = true)
             {
                 SpawnRegionInstance Spawner = null;
                 if (Scene.m_AnimalSpawners.TryGetValue(m_SpawnerGUID, out Spawner))
@@ -4763,27 +4763,24 @@ namespace SkyCoopServer
                     {
                         Spawner.OnAnimalDied(CurrentTime, ServerInstance.m_Config.m_ExperienceMode);
                     }
-                    bool IsAurora = false;
-                    if (ServerInstance.m_Weather != null)
-                    {
-                        IsAurora = ServerInstance.m_Weather.IsAurora();
-                    }
-                    List<NetPeer> peers = new List<NetPeer>();
-                    ServerInstance.m_Instance.GetConnectedPeers(peers);
-                    foreach (NetPeer peer in peers)
-                    {
-                        PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(peer);
-                        if (Player != null && Player.m_Scene == Scene.m_SceneName)
-                        {
-                            //ServerSend.SendAnimalCorpse(peer, GetPrefabName(IsAurora), m_GUID, m_Position, m_Rotation);
-
-                            //TODO: вернуть трупы когда закончу их визуал
-                            ServerSend.SendAnimalRemoved(peer, m_GUID);
-                        }
-                    }
-                    Scene.m_Animals.Remove(m_GUID);
-                    Logger.Log(ConsoleColor.DarkRed, $"{m_Prefab} {m_GUID} died");
                 }
+
+                bool IsAurora = ServerInstance.m_Weather != null && ServerInstance.m_Weather.IsAurora();
+                string Prefab = GetPrefabName(IsAurora);
+
+                List<NetPeer> peers = new List<NetPeer>();
+                ServerInstance.m_Instance.GetConnectedPeers(peers);
+                foreach (NetPeer peer in peers)
+                {
+                    PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(peer);
+                    if (Player != null && Player.m_Scene == Scene.m_SceneName)
+                    {
+                        ServerSend.SendAnimalCorpse(peer, Prefab, m_GUID, m_Position, m_Rotation, OwnerHasCorpse && Player.m_PlayerID == m_Owner);
+                    }
+                }
+
+                Scene.m_Animals.Remove(m_GUID);
+                Logger.Log(ConsoleColor.DarkRed, $"{m_Prefab} {m_GUID} died");
             }
         }
 

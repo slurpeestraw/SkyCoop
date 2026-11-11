@@ -1145,8 +1145,9 @@ namespace SkyCoop
             string GUID = Reader.GetString();
             Vector3 Position = Reader.GetVector3Unity();
             Quaternion Rotation = Reader.GetQuaternionUnity();
+            bool IsOwner = Reader.GetBool();
 
-            AnimalsManager.HandleCorpse(GUID, PrefabName, Position, Rotation);
+            AnimalsManager.HandleCorpse(GUID, PrefabName, Position, Rotation, IsOwner);
         }
     }
 }
