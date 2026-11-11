@@ -554,6 +554,32 @@ namespace SkyCoopServer
             }
         }
 
+        public IceHoleData AddIceHoleState(string SceneName, string Key, Vector3 Position, float NormalizedFrozen, int FishingState, float MinutesSinceLastClearing, bool PauseFreezing)
+        {
+            SceneData SceneData = GetSceneData(SceneName);
+            if (SceneData == null)
+            {
+                Logger.Log(ConsoleColor.Red, $"[AddIceHoleState] called on scene {SceneName} that not exist!");
+                return null;
+            }
+
+            IceHoleData Data = null;
+            if (!SceneData.m_IceHoles.TryGetValue(Key, out Data))
+            {
+                Data = new IceHoleData();
+                Data.m_Key = Key;
+                SceneData.m_IceHoles.Add(Key, Data);
+            }
+
+            Data.m_Position = new Vector3JSON(Position.X, Position.Y, Position.Z);
+            Data.m_NormalizedFrozen = NormalizedFrozen;
+            Data.m_FishingState = FishingState;
+            Data.m_MinutesSinceLastClearing = MinutesSinceLastClearing;
+            Data.m_PauseFreezing = PauseFreezing;
+
+            return Data;
+        }
+
         public void SendZone(string SceneName, NetPeer Client)
         {
             SceneData SceneData = GetSceneData(SceneName);
@@ -708,6 +734,21 @@ namespace SkyCoopServer
             foreach (string GUID in SceneData.m_Openables.Keys.ToList())
             {
                 ServerSend.SendOpenableState(Client, GUID, SceneData.m_Openables[GUID], false);
+            }
+        }
+
+        public void SendAllIceHoles(string SceneName, NetPeer Client)
+        {
+            SceneData SceneData = GetSceneData(SceneName);
+            if (SceneData == null)
+            {
+                Logger.Log(ConsoleColor.Red, $"[SendAllIceHoles] called by Client {Client.Id} on scene {SceneName} that not exist!");
+                return;
+            }
+
+            foreach (IceHoleData IceHole in SceneData.m_IceHoles.Values.ToList())
+            {
+                ServerSend.SendIceHoleStatus(Client, IceHole);
             }
         }
 

@@ -110,6 +110,7 @@ namespace SkyCoopServer
             { (int)Packet.Type.ClientBreakDown, ServerHandle.ClientBreakDown },
             { (int)Packet.Type.ClientIsWorking, ServerHandle.ClientIsWorking },
             { (int)Packet.Type.ClientWaterSourceInteraction, ServerHandle.ClientWaterSourceInteraction },
+            { (int)Packet.Type.ClientIceHoleStatus, ServerHandle.ClientIceHoleStatus },
             { (int)Packet.Type.ClientWaterSourceTakeWater, ServerHandle.ClientWaterSourceTakeWater },
             { (int)Packet.Type.ClientAnimalControlReply, ServerHandle.ClientAnimalControlReply },
             { (int)Packet.Type.ClientCheatSpawnAnimal, ServerHandle.ClientCheatSpawnAnimal },

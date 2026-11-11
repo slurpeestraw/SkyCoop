@@ -278,6 +278,23 @@ namespace SkyCoop
             SendToHost(writer);
         }
 
+        public static void SendIceHoleStatus(string Key, Vector3 Position, float NormalizedFrozen, int FishingState, float MinutesSinceLastClearing, bool PauseFreezing)
+        {
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put((int)Packet.Type.ClientIceHoleStatus);
+
+            writer.Put(Key);
+            writer.Put(Position);
+            writer.Put(NormalizedFrozen);
+            writer.Put(FishingState);
+            writer.Put(MinutesSinceLastClearing);
+            writer.Put(PauseFreezing);
+
+            SkyCoop.Logger.Log($"SendIceHoleStatus {Key} Frozen={NormalizedFrozen} State={FishingState}");
+
+            SendToHost(writer);
+        }
+
         public static void SendClothing(DataStr.ClothingData Data)
         {
             SkyCoop.Logger.Log(ConsoleColor.Green, $"m_Hat1 {Data.m_Hat1} {Data.m_Hat1Damage}");

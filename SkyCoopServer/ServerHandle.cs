@@ -466,6 +466,7 @@ namespace SkyCoopServer
 
             ServerInstance.m_ScenesData.SendAllGears(SceneName, Client);
             ServerInstance.m_ScenesData.SendAllOpenables(SceneName, Client);
+            ServerInstance.m_ScenesData.SendAllIceHoles(SceneName, Client);
             ServerInstance.m_ScenesData.SendZone(SceneName, Client);
             ServerInstance.m_ScenesData.SendAllDeathContainers(SceneName, Client);
             ServerInstance.m_ScenesData.SendAllContainerStates(SceneName, Client);
@@ -1564,6 +1565,45 @@ namespace SkyCoopServer
                 }
             }
         }
+        public static void ClientIceHoleStatus(NetPeer Client, NetDataReader Reader, Server ServerInstance)
+        {
+            PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(Client);
+
+            if (Player == null)
+            {
+                return;
+            }
+
+            string Key = Reader.GetString();
+            Vector3 Position = Reader.GetVector3();
+            float NormalizedFrozen = Reader.GetFloat();
+            int FishingState = Reader.GetInt();
+            float MinutesSinceLastClearing = Reader.GetFloat();
+            bool PauseFreezing = Reader.GetBool();
+
+            IceHoleData Data = ServerInstance.m_ScenesData.AddIceHoleState(Player.m_Scene, Key, Position, NormalizedFrozen, FishingState, MinutesSinceLastClearing, PauseFreezing);
+            if (Data == null)
+            {
+                return;
+            }
+
+            List<NetPeer> peers = new List<NetPeer>();
+            ServerInstance.m_Instance.GetConnectedPeers(peers);
+            foreach (NetPeer Peer in peers.ToArray())
+            {
+                if (Peer == null || Peer.Id == Client.Id)
+                {
+                    continue;
+                }
+
+                PlayerData OtherPlayer = ServerInstance.GetPlayerDataByNetPeer(Peer);
+                if (OtherPlayer != null && OtherPlayer.m_Scene == Player.m_Scene)
+                {
+                    ServerSend.SendIceHoleStatus(Peer, Data);
+                }
+            }
+        }
+
         public static void ClientAnimalControlReply(NetPeer Client, NetDataReader Reader, Server ServerInstance)
         {
             PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(Client);

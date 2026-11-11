@@ -331,6 +331,18 @@ namespace SkyCoop
             OpenablesSync.HandleOpenableSync(GUID, OpenState, AllowAudio);
         }
 
+        public static void ClientIceHoleStatus(NetDataReader Reader)
+        {
+            string Key = Reader.GetString();
+            Vector3 Position = Reader.GetVector3Unity();
+            float NormalizedFrozen = Reader.GetFloat();
+            int FishingState = Reader.GetInt();
+            float MinutesSinceLastClearing = Reader.GetFloat();
+            bool PauseFreezing = Reader.GetBool();
+
+            IceHoleSync.HandleIceHoleStatus(Key, Position, NormalizedFrozen, FishingState, MinutesSinceLastClearing, PauseFreezing);
+        }
+
         public static void ClientClothing(NetDataReader Reader)
         {
             DataStr.ClothingData Data = Reader.GetClothingData();

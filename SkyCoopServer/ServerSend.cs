@@ -425,6 +425,21 @@ namespace SkyCoopServer
             Client.Send(writer, DeliveryMethod.ReliableOrdered);
         }
 
+        public static void SendIceHoleStatus(NetPeer Client, IceHoleData Data)
+        {
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put((int)Packet.Type.ClientIceHoleStatus);
+
+            writer.Put(Data.m_Key);
+            writer.Put(Data.m_Position.ToVector());
+            writer.Put(Data.m_NormalizedFrozen);
+            writer.Put(Data.m_FishingState);
+            writer.Put(Data.m_MinutesSinceLastClearing);
+            writer.Put(Data.m_PauseFreezing);
+
+            Client.Send(writer, DeliveryMethod.ReliableOrdered);
+        }
+
         public static void SendZoneUpdate(NetPeer Client, DataStr.DangerCircleShrinkStateData Stage, Vector3 NextCenter, float NextRadius, Vector2 MapRefScale, Server ServerInstance)
         {
             NetDataWriter writer = new NetDataWriter();

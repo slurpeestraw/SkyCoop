@@ -1152,6 +1152,7 @@ namespace SkyCoopServer
             public Dictionary<string, bool> m_BreakDowns = new Dictionary<string, bool>();
             public Dictionary<string, HarvestableData> m_Harvestables = new Dictionary<string, HarvestableData>();
             public Dictionary<string, WaterSourceData> m_WaterSources = new Dictionary<string, WaterSourceData>();
+            public Dictionary<string, IceHoleData> m_IceHoles = new Dictionary<string, IceHoleData>();
             public Dictionary<string, RadialSpawnSaveData> m_RadialSpawnsData = new Dictionary<string, RadialSpawnSaveData>();
 
             public Dictionary<string, PropData> m_Props = new Dictionary<string, PropData>();
@@ -1183,6 +1184,7 @@ namespace SkyCoopServer
                 public Dictionary<string, bool> BreakDowns { get; set; }
                 public List<HarvestableData.SaveData> Harvestables { get; set; }
                 public List<WaterSourceData.SaveData> WaterSources { get; set; }
+                public List<IceHoleData.SaveData> IceHoles { get; set; }
                 public List<RadialSpawnSaveData> RadialSpawnsData { get; set; }
                 public List<SpawnRegionInstance.SaveData> SpawnRegions { get; set; }
                 public List<AnimalEntity.SaveData> Animals { get; set; }
@@ -1236,6 +1238,11 @@ namespace SkyCoopServer
                 foreach (WaterSourceData source in m_WaterSources.Values.ToList())
                 {
                     data.WaterSources.Add(source.Save());
+                }
+                data.IceHoles = new List<IceHoleData.SaveData>();
+                foreach (IceHoleData iceHole in m_IceHoles.Values.ToList())
+                {
+                    data.IceHoles.Add(iceHole.Save());
                 }
                 data.RadialSpawnsData = new List<RadialSpawnSaveData>();
                 foreach (RadialSpawnSaveData spawner in m_RadialSpawnsData.Values.ToList())
@@ -1335,6 +1342,14 @@ namespace SkyCoopServer
                     {
                         WaterSourceData Source = new WaterSourceData(saveData);
                         m_WaterSources.Add(Source.m_GUID, Source);
+                    }
+                }
+                if (data.IceHoles != null)
+                {
+                    foreach (IceHoleData.SaveData saveData in data.IceHoles)
+                    {
+                        IceHoleData IceHole = new IceHoleData(saveData);
+                        m_IceHoles.Add(IceHole.m_Key, IceHole);
                     }
                 }
                 if (data.RadialSpawnsData != null)
@@ -4155,6 +4170,55 @@ namespace SkyCoopServer
                 m_IsGood = data.IsGood;
                 m_ChanceToBeBad = data.ChanceToBeBad;
                 m_GUID = data.GUID;
+            }
+        }
+
+        public class IceHoleData
+        {
+            public string m_Key = string.Empty;
+            public Vector3JSON m_Position = new Vector3JSON();
+            public float m_NormalizedFrozen = 0;
+            public int m_FishingState = 0;
+            public float m_MinutesSinceLastClearing = 0;
+            public bool m_PauseFreezing = false;
+
+            public IceHoleData() { }
+
+            public IceHoleData(SaveData data)
+            {
+                Load(data);
+            }
+
+            public class SaveData
+            {
+                public string Key { get; set; }
+                public Vector3JSON Position { get; set; }
+                public float NormalizedFrozen { get; set; }
+                public int FishingState { get; set; }
+                public float MinutesSinceLastClearing { get; set; }
+                public bool PauseFreezing { get; set; }
+            }
+
+            public SaveData Save()
+            {
+                SaveData data = new SaveData();
+                data.Key = m_Key;
+                data.Position = new Vector3JSON(m_Position.x, m_Position.y, m_Position.z);
+                data.NormalizedFrozen = m_NormalizedFrozen;
+                data.FishingState = m_FishingState;
+                data.MinutesSinceLastClearing = m_MinutesSinceLastClearing;
+                data.PauseFreezing = m_PauseFreezing;
+                return data;
+            }
+
+            public void Load(SaveData data)
+            {
+                m_Key = data.Key ?? string.Empty;
+                m_Position = data.Position ?? new Vector3JSON();
+                m_NormalizedFrozen = data.NormalizedFrozen;
+                m_FishingState = data.FishingState;
+                m_MinutesSinceLastClearing = data.MinutesSinceLastClearing;
+                m_PauseFreezing = data.PauseFreezing;
             }
         }
 
