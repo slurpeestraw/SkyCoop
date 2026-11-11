@@ -131,16 +131,44 @@ namespace SkyCoopClient
                         Ai.m_CurrentHP = 0;
                         Ai.SetAiMode(AiMode.Dead);
                         Ai.enabled = false;
-                        if (Ai.m_BodyHarvest)
-                        {
-                            Ai.m_BodyHarvest.enabled = false;
-                        }
                     }
 
                     return Obj;
                 }
             }
             return null;
+        }
+
+        private static void EnableCorpseHarvest(GameObject Obj)
+        {
+            if (!Obj)
+            {
+                return;
+            }
+
+            BaseAi Ai = Obj.GetComponent<BaseAi>();
+            if (Ai && Ai.m_BodyHarvest)
+            {
+                Ai.m_BodyHarvest.enabled = true;
+            }
+
+            BodyHarvest[] BodyHarvests = Obj.GetComponentsInChildren<BodyHarvest>(true);
+            for (int i = 0; i < BodyHarvests.Length; i++)
+            {
+                if (BodyHarvests[i])
+                {
+                    BodyHarvests[i].enabled = true;
+                }
+            }
+
+            BodyHarvestInteraction[] Interactions = Obj.GetComponentsInChildren<BodyHarvestInteraction>(true);
+            for (int i = 0; i < Interactions.Length; i++)
+            {
+                if (Interactions[i])
+                {
+                    Interactions[i].enabled = true;
+                }
+            }
         }
 
         public static void HandleControlRequest(string PrefabName, string GUID, string SpawnerGUID, Vector3 Position, Quaternion Rotation, int AiState, bool IsBleeding, float Health, float BleedingMinutes, int PreviousState, Vector3 SpawnPose)
@@ -295,6 +323,14 @@ namespace SkyCoopClient
                         {
                             Hook.enabled = false;
                         }
+
+                        BaseAi Ai = Obj.GetComponent<BaseAi>();
+                        if (Ai && Ai.m_BodyHarvest)
+                        {
+                            EnableCorpseHarvest(Obj);
+                            SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{GUID} owner corpse body harvest enabled");
+                        }
+
                         SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{GUID} corpse left to owner client");
                         return;
                     }
@@ -323,6 +359,11 @@ namespace SkyCoopClient
                 if (!Corpse)
                 {
                     SkyCoop.Logger.Log(ConsoleColor.Red, $"[AnimalsManager] Failed to spawn corpse for {GUID} using {Prefab}");
+                }
+                else
+                {
+                    EnableCorpseHarvest(Corpse);
+                    SkyCoop.Logger.Log(ConsoleColor.Cyan, $"{GUID} remote corpse body harvest enabled");
                 }
             }
             catch (Exception Exception)
