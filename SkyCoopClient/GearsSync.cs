@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using Il2Cpp;
+using Il2CppInterop.Runtime;
 using Il2CppRewired;
 using Il2CppRewired.HID;
 using Il2CppTLD.Cooking;
@@ -211,7 +212,36 @@ namespace SkyCoopClient
                         {
                             GameObject target = OBJ;
                             CorpseSync.TryGetGuid(bodyHarvest, out string pickupGuid);
-                            CorpseSync.DebugLog($"Pickup interaction gate {bodyHarvest.name} interaction={__instance.ActiveInteraction.GetType().Name} frame={Time.frameCount}");
+                            if (CorpseSync.s_CorpseDebug)
+                            {
+                                string interactionName = "";
+                                try
+                                {
+                                    Il2CppSystem.Object interactionObject = __instance.ActiveInteraction.TryCast<Il2CppSystem.Object>();
+                                    if (interactionObject != null)
+                                    {
+                                        interactionName = interactionObject.GetIl2CppType().Name;
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    CorpseSync.DebugLog($"Interaction type via Il2CppSystem.Object failed: {e.GetType().Name}: {e.Message}");
+                                }
+
+                                if (string.IsNullOrEmpty(interactionName))
+                                {
+                                    try
+                                    {
+                                        interactionName = IL2CPP.il2cpp_class_get_name_(__instance.ActiveInteraction.ObjectClass);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        CorpseSync.DebugLog($"Interaction type via raw pointer failed: {e.GetType().Name}: {e.Message}");
+                                    }
+                                }
+
+                                CorpseSync.DebugLog($"Pickup interaction gate {bodyHarvest.name} interaction={interactionName} frame={Time.frameCount}");
+                            }
                             if (PlayersManager.TryInteract(bodyHarvest, () =>
                             {
                                 if (__instance.ActiveInteraction != null && __instance.ActiveInteraction.GetInteractiveObject() == target)

@@ -71,7 +71,20 @@ namespace SkyCoopClient
             }
             catch (Exception e)
             {
-                SkyCoop.Logger.Log(ConsoleColor.Red, $"[CorpseLock] release check failed: {e.GetType().Name}: {e.Message}");
+                string guid = s_Guid;
+                try
+                {
+                    if (EntitySync.CanSend())
+                    {
+                        ClientSend.SendFinishInteract();
+                    }
+                }
+                catch (Exception sendError)
+                {
+                    SkyCoop.Logger.Log(ConsoleColor.Red, $"[CorpseLock] failed to release {guid} after error: {sendError.GetType().Name}: {sendError.Message}");
+                }
+
+                SkyCoop.Logger.Log(ConsoleColor.Red, $"[CorpseLock] release check failed for {guid}: {e.GetType().Name}: {e.Message}");
                 Clear();
             }
         }
