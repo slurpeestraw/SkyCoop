@@ -25,6 +25,14 @@ namespace SkyCoopClient
             SkyCoop.Logger.Log(ConsoleColor.DarkMagenta, "Start loading scenes...");
             if (ModMain.IsMultiplayer())
             {
+                try
+                {
+                    CorpseSync.ClosePanelIfOpen();
+                }
+                catch (System.Exception e)
+                {
+                    SkyCoop.Logger.Log(System.ConsoleColor.Red, $"[Minimalizer] Closing corpse panel failed: {e.GetType().Name}: {e.Message}");
+                }
                 ClientSend.SendNewScene("Empty");
             }
         }
@@ -1230,6 +1238,16 @@ namespace SkyCoopClient
             private static void Postfix(BodyHarvest __instance)
             {
                 if (!ModMain.IsMultiplayer()) { return; }
+
+                try
+                {
+                    if (CorpseSync.IsTrackedWorldCorpse(__instance)) { return; }
+                }
+                catch (System.Exception)
+                {
+                }
+
+                if (CorpseAdapter.s_SpawningCorpse) { return; }
 
                 __instance.enabled = false;
             }

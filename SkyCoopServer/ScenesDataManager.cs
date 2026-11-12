@@ -1095,19 +1095,16 @@ namespace SkyCoopServer
                             if(Spawner.m_NextDespawnCheck < CurrentTime)
                             {
                                 int NumToDespawn =  Spawner.m_Spawned- TargetPopulation;
-                                for (int i = 0; i < NumToDespawn; i++)
+                                List<string> DespawnGuids = SceneData.SelectPopulationDespawns(
+                                    Data.m_Animals.Values, Spawner.m_Data.GUID, NumToDespawn, CurrentTime);
+
+                                foreach (string DespawnGuid in DespawnGuids)
                                 {
-                                    foreach (AnimalEntity Animal in Data.m_Animals.Values)
+                                    if (Data.m_Animals.TryGetValue(DespawnGuid, out AnimalEntity Animal))
                                     {
-                                        if(!Animal.m_Summoned && Animal.m_SpawnerGUID == Spawner.m_Data.GUID)
-                                        {
-                                            if (Animal.CanDespawn(CurrentTime))
-                                            {
-                                                Logger.Log(ConsoleColor.Yellow, $"Despawned {Animal.m_Prefab} {Animal.m_GUID} from spawner {Animal.m_SpawnerGUID}, population control");
-                                                Spawner.m_Spawned--;
-                                                Data.m_Animals.Remove(Animal.m_GUID);
-                                            }
-                                        }
+                                        Logger.Log(ConsoleColor.Yellow, $"Despawned {Animal.m_Prefab} {Animal.m_GUID} from spawner {Animal.m_SpawnerGUID}, population control");
+                                        Spawner.m_Spawned--;
+                                        Data.m_Animals.Remove(Animal.m_GUID);
                                     }
                                 }
 

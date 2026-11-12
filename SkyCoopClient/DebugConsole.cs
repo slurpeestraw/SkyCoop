@@ -57,6 +57,7 @@ namespace SkyCoopClient
             uConsole.RegisterCommand("give", new Action(GiveIlegalGear));
             uConsole.RegisterCommand("campfire", new Action(GiveCampfireKit));
             uConsole.RegisterCommand("liquidboildebug", new Action(LiquiadBoilDebug));
+            uConsole.RegisterCommand("corpsedebug", new Action(CorpseDebug));
             uConsole.RegisterCommand("removepleasewait", new Action(RemovePleaseWait));
             uConsole.RegisterCommand("rip", new Action(RIP));
             uConsole.RegisterCommand("ripmodded", new Action(RIPModded));
@@ -186,6 +187,12 @@ namespace SkyCoopClient
         public static void LiquiadBoilDebug()
         {
             GearsSync.s_LiquidCookingDebug = !GearsSync.s_LiquidCookingDebug;
+        }
+
+        public static void CorpseDebug()
+        {
+            CorpseSync.s_CorpseDebug = !CorpseSync.s_CorpseDebug;
+            SkyCoop.Logger.Log($"corpsedebug {CorpseSync.s_CorpseDebug}");
         }
 
         public static void RIP()

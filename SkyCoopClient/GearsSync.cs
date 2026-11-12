@@ -203,6 +203,18 @@ namespace SkyCoopClient
                         {
                             return false;
                         }
+
+                        BodyHarvest bodyHarvest = OBJ.GetComponentInChildren<BodyHarvest>(true);
+                        if (bodyHarvest &&
+                            !PlayersManager.s_GrantedReentry &&
+                            CorpseSync.IsTrackedWorldCorpse(bodyHarvest))
+                        {
+                            CorpseSync.DebugLog($"Pickup interaction gate {bodyHarvest.name}");
+                            if (PlayersManager.TryInteract(bodyHarvest, () => __instance.InteractiveObjectsProcessInteraction()))
+                            {
+                                return false;
+                            }
+                        }
                     }
                 }
                 return true;

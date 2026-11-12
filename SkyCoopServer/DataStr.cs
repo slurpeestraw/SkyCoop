@@ -1217,6 +1217,39 @@ namespace SkyCoopServer
                 public List<AnimalEntity.SaveData> Animals { get; set; }
             }
 
+            public static List<string> SelectPopulationDespawns(
+                IEnumerable<AnimalEntity> animals,
+                string spawnerGuid,
+                int count,
+                float currentTime)
+            {
+                List<string> selected = new List<string>();
+                if (animals == null || count <= 0)
+                {
+                    return selected;
+                }
+
+                foreach (AnimalEntity animal in animals)
+                {
+                    if (selected.Count >= count)
+                    {
+                        break;
+                    }
+
+                    if (animal == null || animal.m_Summoned || animal.m_SpawnerGUID != spawnerGuid)
+                    {
+                        continue;
+                    }
+
+                    if (animal.CanDespawn(currentTime))
+                    {
+                        selected.Add(animal.m_GUID);
+                    }
+                }
+
+                return selected;
+            }
+
             public SaveData Save()
             {
                 SaveData data = new SaveData();
@@ -4421,7 +4454,7 @@ namespace SkyCoopServer
                     m_Bone = saveData.Bone;
                 }
 
-                public SaveData Save()
+            public SaveData Save()
                 {
                     return new SaveData(m_ArrowPrefab, m_Position, m_Rotation, m_Condition, m_Bone);
                 }
@@ -4744,12 +4777,12 @@ namespace SkyCoopServer
                     if(m_Health <= 0)
                     {
                         m_Health = 0;
-                        Death(ServerInstance, Scene, OwnerHasCorpse: false);
+                        Death(ServerInstance, Scene);
                     }
                 }
             }
 
-            public void Death(Server ServerInstance, SceneData Scene, bool OwnerHasCorpse = true)
+            public void Death(Server ServerInstance, SceneData Scene)
             {
                 SpawnRegionInstance Spawner = null;
                 if (Scene.m_AnimalSpawners.TryGetValue(m_SpawnerGUID, out Spawner))
@@ -4768,18 +4801,24 @@ namespace SkyCoopServer
                 bool IsAurora = ServerInstance.m_Weather != null && ServerInstance.m_Weather.IsAurora();
                 string Prefab = GetPrefabName(IsAurora);
 
-                List<NetPeer> peers = new List<NetPeer>();
-                ServerInstance.m_Instance.GetConnectedPeers(peers);
-                foreach (NetPeer peer in peers)
+                Scene.m_Animals.Remove(m_GUID);
+
+                bool Created = EntitySync.Create(
+                    ServerInstance,
+                    Scene.m_SceneName,
+                    CorpsePolicy.c_Kind,
+                    m_GUID,
+                    Prefab,
+                    m_Position,
+                    m_Rotation,
+                    m_Owner);
+
+                if (!Created)
                 {
-                    PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(peer);
-                    if (Player != null && Player.m_Scene == Scene.m_SceneName)
-                    {
-                        ServerSend.SendAnimalCorpse(peer, Prefab, m_GUID, m_Position, m_Rotation, OwnerHasCorpse && Player.m_PlayerID == m_Owner);
-                    }
+                    SceneBroadcast.ToScene(ServerInstance, Scene.m_SceneName, peer =>
+                        ServerSend.SendAnimalRemoved(peer, m_GUID));
                 }
 
-                Scene.m_Animals.Remove(m_GUID);
                 Logger.Log(ConsoleColor.DarkRed, $"{m_Prefab} {m_GUID} died");
             }
         }

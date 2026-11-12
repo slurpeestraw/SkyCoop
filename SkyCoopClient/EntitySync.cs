@@ -26,7 +26,22 @@ namespace SkyCoopClient
         private static readonly Dictionary<string, IEntityAdapter> s_Adapters =
             new Dictionary<string, IEntityAdapter>(StringComparer.Ordinal);
 
+        private static readonly HashSet<string> s_TrackedEntities =
+            new HashSet<string>(StringComparer.Ordinal);
+
         public static bool s_ApplyingRemote = false;
+
+        public static bool IsTracked(string kind, string guid)
+        {
+            return !string.IsNullOrEmpty(kind) &&
+                   !string.IsNullOrEmpty(guid) &&
+                   s_TrackedEntities.Contains(TrackedKey(kind, guid));
+        }
+
+        private static string TrackedKey(string kind, string guid)
+        {
+            return kind + ":" + guid;
+        }
 
         public static void Register(IEntityAdapter adapter)
         {
@@ -139,6 +154,7 @@ namespace SkyCoopClient
         {
             if (Minimalizer.s_LoadingFlag || !ModMain.IsGameplayScene())
             {
+                SkyCoop.Logger.Log(ConsoleColor.DarkGray, $"[EntitySync] Dropped {message.Kind} {message.GUID}: loading={Minimalizer.s_LoadingFlag} scene={ModMain.GetCurrentSceneName()}");
                 return;
             }
 
@@ -147,6 +163,8 @@ namespace SkyCoopClient
                 SkyCoop.Logger.Log(ConsoleColor.Yellow, $"[EntitySync] No adapter for {message.Kind}");
                 return;
             }
+
+            s_TrackedEntities.Add(TrackedKey(message.Kind, message.GUID));
 
             try
             {
@@ -206,6 +224,8 @@ namespace SkyCoopClient
             {
                 return;
             }
+
+            s_TrackedEntities.Remove(TrackedKey(kind, guid));
 
             try
             {

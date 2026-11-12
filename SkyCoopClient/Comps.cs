@@ -3399,6 +3399,8 @@ namespace SkyCoop
             public bool m_IsActor = false;
             public bool m_LastHolding = false;
 
+            public bool IsLocalCorpse => m_Ai && !m_IsActor && m_Ai.m_CurrentMode == AiMode.Dead;
+
             public void UpdateSpawner()
             {
                 if (m_Ai && m_Ai.m_SpawnRegionParent)
@@ -3513,15 +3515,21 @@ namespace SkyCoop
                         }
                     }
 
-                    if (m_Ai.m_BodyHarvest)
+                    bool localCorpse = IsLocalCorpse;
+
+                    if (m_Ai.m_BodyHarvest && !localCorpse)
                     {
                         m_Ai.m_BodyHarvest.enabled = false;
                     }
-                    m_NoResponceTime += Time.deltaTime;
 
-                    if (m_NoResponceTime > 3)
+                    if (!localCorpse)
                     {
-                        AnimalsManager.HandleRemove(gameObject, "(timeout)");
+                        m_NoResponceTime += Time.deltaTime;
+
+                        if (m_NoResponceTime > 3)
+                        {
+                            AnimalsManager.HandleRemove(gameObject, "(timeout)");
+                        }
                     }
                 }
             }

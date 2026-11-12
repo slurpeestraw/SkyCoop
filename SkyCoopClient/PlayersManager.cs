@@ -25,6 +25,8 @@ namespace SkyCoop
         public static DataStr.DamageType m_LastDamageType = DataStr.DamageType.Unknown;
         public static Comps.PlayerDamageColider.DamageZone m_LastDamageZone = Comps.PlayerDamageColider.DamageZone.Chest;
         public static MonoBehaviour s_LastTryInteractionComponent = null;
+        public static Action s_PendingInteractionAction = null;
+        public static bool s_GrantedReentry = false;
         public static bool s_ForceUpdateClothing = false;
         public static bool s_Spectator = false;
         public static int s_SpectateID = -1;
@@ -953,6 +955,7 @@ namespace SkyCoop
 
         public static void RespawnOnPoint(Vector3 Position, Quaternion Rotation, bool RespawnAnim)
         {
+            CloseCorpsePanelOnDeath();
             GameManager.GetConditionComponent().m_NeverDie = false;
             s_Spectator = false;
 
@@ -1006,6 +1009,7 @@ namespace SkyCoop
 
         public static void ToKnockedState(DataStr.DamageType DeathCase = DataStr.DamageType.Unknown, Comps.PlayerDamageColider.DamageZone DamageZone = Comps.PlayerDamageColider.DamageZone.Chest)
         {
+            CloseCorpsePanelOnDeath();
             PlayersManager.m_LastDamageType = DataStr.DamageType.Unknown;
             PlayersManager.m_LastDamageZone = Comps.PlayerDamageColider.DamageZone.Chest;
             GameManager.GetConditionComponent().m_CurrentHP = 30;
@@ -1021,7 +1025,20 @@ namespace SkyCoop
 
         public static void Death(DataStr.DamageType DeathCase = DataStr.DamageType.Unknown, Comps.PlayerDamageColider.DamageZone DamageZone = Comps.PlayerDamageColider.DamageZone.Chest)
         {
+            CloseCorpsePanelOnDeath();
             ClientSend.SendDeath(DeathCase, false, DamageZone == Comps.PlayerDamageColider.DamageZone.Head);
+        }
+
+        private static void CloseCorpsePanelOnDeath()
+        {
+            try
+            {
+                CorpseSync.ClosePanelIfOpen();
+            }
+            catch (Exception e)
+            {
+                SkyCoop.Logger.Log(ConsoleColor.Red, $"[PlayersManager] Closing corpse panel failed: {e.GetType().Name}: {e.Message}");
+            }
         }
 
         public static void EmptyFn()
@@ -1031,6 +1048,33 @@ namespace SkyCoop
 
         public static void HandleTryInteract(bool Result)
         {
+            if (s_LastTryInteractionComponent is BodyHarvest)
+            {
+                Action action = s_PendingInteractionAction;
+                s_PendingInteractionAction = null;
+
+                if (Result)
+                {
+                    if (action != null)
+                    {
+                        s_GrantedReentry = true;
+                        try
+                        {
+                            action();
+                        }
+                        finally
+                        {
+                            s_GrantedReentry = false;
+                        }
+                    }
+                    return;
+                }
+
+                HUDMessage.AddMessage("Failed, interaction blocked by other player!", true, true);
+                ClientSend.SendFinishInteract();
+                return;
+            }
+
             if (s_LastTryInteractionComponent is DebugMarkerInteract Marker)
             {
                 if (Result)
@@ -1442,6 +1486,25 @@ namespace SkyCoop
             SkyCoop.Logger.Log($"VehicleDoor PerformHold {DoorGUID}");
 
             ClientSend.SendTryInteract(DoorGUID);
+            return true;
+        }
+
+        public static bool TryInteract(BodyHarvest bh, Action onGranted)
+        {
+            if (bh == null)
+            {
+                return false;
+            }
+
+            if (!CorpseSync.TryGetGuid(bh, out string guid))
+            {
+                return false;
+            }
+
+            s_LastTryInteractionComponent = bh;
+            s_PendingInteractionAction = onGranted;
+            SkyCoop.Logger.Log($"Corpse PerformHold {guid}");
+            ClientSend.SendTryInteract(guid, true);
             return true;
         }
 

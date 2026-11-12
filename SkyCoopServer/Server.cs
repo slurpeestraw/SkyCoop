@@ -175,6 +175,8 @@ namespace SkyCoopServer
             m_PlayersData = new PlayersDataManager(this);
             m_ScenesData = new ScenesDataManager(this);
 
+            EntityRules.Register(new CorpsePolicy());
+
             s_NextSecondCall = DateTime.UtcNow.AddSeconds(1);
             LootTableManager.Load();
             m_AvailableGameModes = FilesManager.GetGameModesList();

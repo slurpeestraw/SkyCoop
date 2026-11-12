@@ -22,7 +22,7 @@ namespace SkyCoopServer
     {
         private static readonly TimeSpan c_PendingUploadTimeout = TimeSpan.FromSeconds(10);
 
-        public static void Create(
+        public static bool Create(
             Server server,
             string scene,
             string kind,
@@ -34,20 +34,20 @@ namespace SkyCoopServer
         {
             if (server == null || !SceneNames.IsGameplay(scene))
             {
-                return;
+                return false;
             }
 
             DataStr.SceneData? sceneData = server.m_ScenesData.GetSceneData(scene);
             if (sceneData == null)
             {
                 Logger.Log(ConsoleColor.Yellow, $"[EntitySync] Cannot create {kind} {guid}: scene {scene} is not loaded");
-                return;
+                return false;
             }
 
             if (sceneData.m_Entities.ContainsKey(guid))
             {
                 Logger.Log(ConsoleColor.Yellow, $"[EntitySync] Entity {kind} {guid} already exists in {scene}");
-                return;
+                return false;
             }
 
             ReplicatedEntity entity = new ReplicatedEntity
@@ -79,6 +79,7 @@ namespace SkyCoopServer
             int uploader = entity.m_Uploader;
             SceneBroadcast.ToScene(server, scene, peer =>
                 ServerSend.SendEntityState(peer, ToMessage(entity, peer.Id == uploader)));
+            return true;
         }
 
         public static void HandleClientState(NetPeer client, NetDataReader reader, Server server)

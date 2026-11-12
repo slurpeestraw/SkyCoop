@@ -1387,19 +1387,5 @@ namespace SkyCoopServer
 
             Client.Send(writer, DeliveryMethod.ReliableOrdered);
         }
-
-        public static void SendAnimalCorpse(NetPeer Client, string Prefab, string GUID, Vector3 Position, Quaternion Rotation, bool IsOwner)
-        {
-            NetDataWriter writer = new NetDataWriter();
-            writer.Put((int)Packet.Type.ClientAnimalCorpse);
-
-            writer.Put(Prefab);
-            writer.Put(GUID);
-            writer.Put(Position);
-            writer.Put(Rotation);
-            writer.Put(IsOwner);
-
-            Client.Send(writer, DeliveryMethod.ReliableOrdered);
-        }
     }
 }

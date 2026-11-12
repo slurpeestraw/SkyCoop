@@ -32,6 +32,7 @@ namespace SkyCoop
 
             DebugConsole.RegisterCommands();
             SkyCoopClient.EntitySync.Register(new SkyCoopClient.DebugMarkerAdapter());
+            SkyCoopClient.EntitySync.Register(new SkyCoopClient.CorpseAdapter());
             Settings.Init();
             FilesManager.InitFolders(true);
 

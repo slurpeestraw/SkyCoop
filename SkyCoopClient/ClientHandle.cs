@@ -1139,15 +1139,16 @@ namespace SkyCoop
 
             AnimalsManager.HandleArrow(GUID, Arow);
         }
+
         public static void ClientAnimalCorpse(NetDataReader Reader)
         {
             string PrefabName = Reader.GetString();
             string GUID = Reader.GetString();
-            Vector3 Position = Reader.GetVector3Unity();
-            Quaternion Rotation = Reader.GetQuaternionUnity();
-            bool IsOwner = Reader.GetBool();
+            Reader.GetVector3Unity();
+            Reader.GetQuaternionUnity();
+            Reader.GetBool();
 
-            AnimalsManager.HandleCorpse(GUID, PrefabName, Position, Rotation, IsOwner);
+            SkyCoop.Logger.Log(System.ConsoleColor.Yellow, $"legacy corpse packet ignored {PrefabName} {GUID}");
         }
     }
 }
