@@ -3,7 +3,7 @@
 > - Ice fishing hole state sync, including fixes for scene transitions and menu scene detection.
 > - Animal corpse sync on death.
 >
-> Corpses are server-authoritative: harvest state, harvest lock, removal, quartering, late join and scene save are synced.
+> Corpses are server-authoritative (harvest state, harvest lock, removal, quartering, late join, scene save). In testing; not yet verified in-game.
 
 > **Fork notice:** This is a fork of [Filigrani/SkyCoop](https://github.com/Filigrani/SkyCoop), focused on adding dedicated server builds for Linux/Windows and the GitHub Actions release workflow. All original mod work belongs to the upstream project.
 

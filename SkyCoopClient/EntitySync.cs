@@ -43,6 +43,13 @@ namespace SkyCoopClient
             return kind + ":" + guid;
         }
 
+        public static void ClearTracked()
+        {
+            int count = s_TrackedEntities.Count;
+            s_TrackedEntities.Clear();
+            SkyCoop.Logger.Log(ConsoleColor.DarkGray, $"[EntitySync] Cleared {count} tracked entities");
+        }
+
         public static void Register(IEntityAdapter adapter)
         {
             if (adapter == null || string.IsNullOrEmpty(adapter.Kind))

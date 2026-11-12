@@ -4454,7 +4454,7 @@ namespace SkyCoopServer
                     m_Bone = saveData.Bone;
                 }
 
-            public SaveData Save()
+                public SaveData Save()
                 {
                     return new SaveData(m_ArrowPrefab, m_Position, m_Rotation, m_Condition, m_Bone);
                 }
