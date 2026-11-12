@@ -209,8 +209,20 @@ namespace SkyCoopClient
                             !PlayersManager.s_GrantedReentry &&
                             CorpseSync.IsTrackedWorldCorpse(bodyHarvest))
                         {
+                            GameObject target = OBJ;
+                            CorpseSync.TryGetGuid(bodyHarvest, out string pickupGuid);
                             CorpseSync.DebugLog($"Pickup interaction gate {bodyHarvest.name} interaction={__instance.ActiveInteraction.GetType().Name} frame={Time.frameCount}");
-                            if (PlayersManager.TryInteract(bodyHarvest, () => __instance.InteractiveObjectsProcessInteraction()))
+                            if (PlayersManager.TryInteract(bodyHarvest, () =>
+                            {
+                                if (__instance.ActiveInteraction != null && __instance.ActiveInteraction.GetInteractiveObject() == target)
+                                {
+                                    __instance.InteractiveObjectsProcessInteraction();
+                                }
+                                else
+                                {
+                                    CorpseSync.DebugLog($"pickup target changed, not replaying {pickupGuid}");
+                                }
+                            }))
                             {
                                 return false;
                             }
