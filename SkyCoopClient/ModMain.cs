@@ -31,6 +31,7 @@ namespace SkyCoop
             Server.OnLogEvent += Logger.HandleServerLog;
 
             DebugConsole.RegisterCommands();
+            SkyCoopClient.EntitySync.Register(new SkyCoopClient.DebugMarkerAdapter());
             Settings.Init();
             FilesManager.InitFolders(true);
 
@@ -284,15 +285,7 @@ namespace SkyCoop
 
         public static bool IsGameplayScene(string Scene = "")
         {
-            if(Scene == "")
-            {
-                Scene = GetCurrentSceneName();
-            }
-            if(Scene == "Empty" || Scene == "Boot" || Scene.StartsWith("MainMenu"))
-            {
-                return false;
-            }
-            return true;
+            return SkyCoopServer.SceneNames.IsGameplay(Scene == "" ? GetCurrentSceneName() : Scene);
         }
 
         public static void ChangeMap()

@@ -1178,6 +1178,7 @@ namespace SkyCoopServer
             public Dictionary<string, HarvestableData> m_Harvestables = new Dictionary<string, HarvestableData>();
             public Dictionary<string, WaterSourceData> m_WaterSources = new Dictionary<string, WaterSourceData>();
             public Dictionary<string, IceHoleData> m_IceHoles = new Dictionary<string, IceHoleData>();
+            public Dictionary<string, ReplicatedEntity> m_Entities = new Dictionary<string, ReplicatedEntity>();
             public Dictionary<string, RadialSpawnSaveData> m_RadialSpawnsData = new Dictionary<string, RadialSpawnSaveData>();
 
             public Dictionary<string, PropData> m_Props = new Dictionary<string, PropData>();
@@ -1210,6 +1211,7 @@ namespace SkyCoopServer
                 public List<HarvestableData.SaveData> Harvestables { get; set; }
                 public List<WaterSourceData.SaveData> WaterSources { get; set; }
                 public List<IceHoleData.SaveData> IceHoles { get; set; }
+                public List<ReplicatedEntity.SaveData> Entities { get; set; }
                 public List<RadialSpawnSaveData> RadialSpawnsData { get; set; }
                 public List<SpawnRegionInstance.SaveData> SpawnRegions { get; set; }
                 public List<AnimalEntity.SaveData> Animals { get; set; }
@@ -1268,6 +1270,11 @@ namespace SkyCoopServer
                 foreach (IceHoleData iceHole in m_IceHoles.Values.ToList())
                 {
                     data.IceHoles.Add(iceHole.Save());
+                }
+                data.Entities = new List<ReplicatedEntity.SaveData>();
+                foreach (ReplicatedEntity entity in m_Entities.Values.ToList())
+                {
+                    data.Entities.Add(entity.Save());
                 }
                 data.RadialSpawnsData = new List<RadialSpawnSaveData>();
                 foreach (RadialSpawnSaveData spawner in m_RadialSpawnsData.Values.ToList())
@@ -1375,6 +1382,14 @@ namespace SkyCoopServer
                     {
                         IceHoleData IceHole = new IceHoleData(saveData);
                         m_IceHoles.Add(IceHole.m_Key, IceHole);
+                    }
+                }
+                if (data.Entities != null)
+                {
+                    foreach (ReplicatedEntity.SaveData saveData in data.Entities)
+                    {
+                        ReplicatedEntity Entity = ReplicatedEntity.Load(saveData);
+                        m_Entities.Add(Entity.m_GUID, Entity);
                     }
                 }
                 if (data.RadialSpawnsData != null)

@@ -1031,6 +1031,33 @@ namespace SkyCoop
 
         public static void HandleTryInteract(bool Result)
         {
+            if (s_LastTryInteractionComponent is DebugMarkerInteract Marker)
+            {
+                if (Result)
+                {
+                    if (Marker.m_PendingAction == "hold")
+                    {
+                        HUDMessage.AddMessage("Marker lock held. Run entitytest release.", true, true);
+                        return;
+                    }
+
+                    if (Marker.m_PendingAction == "remove")
+                    {
+                        SkyCoopClient.EntitySync.SendRemove(DebugEntityAlias.Kind, Marker.m_GUID, 2);
+                    }
+                    else
+                    {
+                        DebugMarkerAdapter.Bump(Marker.m_GUID);
+                    }
+                }
+                else
+                {
+                    HUDMessage.AddMessage("Failed, interaction blocked by other player!", true, true);
+                }
+                ClientSend.SendFinishInteract();
+                return;
+            }
+
             if (s_LastTryInteractionComponent)
             {
                 if (Result)

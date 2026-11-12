@@ -1359,6 +1359,35 @@ namespace SkyCoopServer
 
             Client.Send(writer, DeliveryMethod.ReliableOrdered);
         }
+        public static void SendEntityState(NetPeer Client, EntityMessage Message)
+        {
+            if (Client == null)
+            {
+                return;
+            }
+
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put((int)Packet.Type.ServerEntityState);
+            writer.Put(Message);
+
+            Client.Send(writer, DeliveryMethod.ReliableOrdered);
+        }
+
+        public static void SendEntityRemoved(NetPeer Client, string Kind, string GUID)
+        {
+            if (Client == null)
+            {
+                return;
+            }
+
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put((int)Packet.Type.ServerEntityRemoved);
+            writer.Put(Kind ?? "");
+            writer.Put(GUID ?? "");
+
+            Client.Send(writer, DeliveryMethod.ReliableOrdered);
+        }
+
         public static void SendAnimalCorpse(NetPeer Client, string Prefab, string GUID, Vector3 Position, Quaternion Rotation)
         {
             NetDataWriter writer = new NetDataWriter();

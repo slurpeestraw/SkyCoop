@@ -110,6 +110,8 @@ namespace SkyCoop
             { (int)Packet.Type.ClientAnimalDamage, ClientHandle.ClientAnimalDamage },
             { (int)Packet.Type.ClientAnimalAddArrow, ClientHandle.ClientAnimalAddArrow },
             { (int)Packet.Type.ClientAnimalCorpse, ClientHandle.ClientAnimalCorpse },
+            { (int)Packet.Type.ServerEntityState, SkyCoopClient.EntitySync.HandleStatePacket },
+            { (int)Packet.Type.ServerEntityRemoved, SkyCoopClient.EntitySync.HandleRemovedPacket },
         };
 
         public static void ExecutePacketEvent(int PacketID, NetDataReader Reader)

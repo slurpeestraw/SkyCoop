@@ -36,6 +36,7 @@ namespace SkyCoop
             ClassInjector.RegisterTypeInIl2Cpp<BulletWallBangHook>();
             ClassInjector.RegisterTypeInIl2Cpp<CameraAttention>();
             ClassInjector.RegisterTypeInIl2Cpp<DeathPackComp>();
+            ClassInjector.RegisterTypeInIl2Cpp<DebugMarkerInteract>();
             ClassInjector.RegisterTypeInIl2Cpp<ContainerDescriptorHook>();
             ClassInjector.RegisterTypeInIl2Cpp<DangerCircleZone>();
             ClassInjector.RegisterTypeInIl2Cpp<ForcedFire>();
