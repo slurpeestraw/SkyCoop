@@ -114,20 +114,22 @@ namespace SkyCoopClient
             }
         }
 
-        public static void SendRemove(string kind, string guid, int reason)
+        public static bool SendRemove(string kind, string guid, int reason)
         {
             if (!CanSend() || s_ApplyingRemote || string.IsNullOrEmpty(kind) || string.IsNullOrEmpty(guid))
             {
-                return;
+                return false;
             }
 
             try
             {
                 ClientSend.SendEntityRemove(kind, guid, reason);
+                return true;
             }
             catch (Exception e)
             {
                 SkyCoop.Logger.Log(ConsoleColor.Red, $"[EntitySync] SendRemove {kind} {guid} failed: {e.GetType().Name}: {e.Message}");
+                return false;
             }
         }
 

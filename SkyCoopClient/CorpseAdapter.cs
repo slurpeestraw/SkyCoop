@@ -197,7 +197,13 @@ namespace SkyCoopClient
 
         private static void CloseOpenPanel(GameObject obj)
         {
-            CorpseSync.ForceClosePanel(GetBodyHarvest(obj), true);
+            BodyHarvest? bh = GetBodyHarvest(obj);
+            if (bh == null)
+            {
+                return;
+            }
+
+            CorpseSync.ForceClosePanel(bh, true);
         }
     }
 }

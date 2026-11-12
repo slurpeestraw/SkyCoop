@@ -127,7 +127,14 @@ namespace SkyCoopClient
         {
             private static void Prefix()
             {
-                DebugLog("BodyHarvestManager.Serialize");
+                try
+                {
+                    DebugLog("BodyHarvestManager.Serialize");
+                }
+                catch (Exception e)
+                {
+                    SkyCoop.Logger.Log(ConsoleColor.Red, $"[CorpseSync] Serialize log failed: {e.GetType().Name}: {e.Message}");
+                }
             }
         }
 
@@ -136,7 +143,14 @@ namespace SkyCoopClient
         {
             private static void Prefix(string text)
             {
-                DebugLog($"BodyHarvestManager.Deserialize chars={text?.Length ?? 0}");
+                try
+                {
+                    DebugLog($"BodyHarvestManager.Deserialize chars={text?.Length ?? 0}");
+                }
+                catch (Exception e)
+                {
+                    SkyCoop.Logger.Log(ConsoleColor.Red, $"[CorpseSync] Deserialize log failed: {e.GetType().Name}: {e.Message}");
+                }
             }
         }
 
@@ -362,8 +376,10 @@ namespace SkyCoopClient
 
                     if (!string.IsNullOrEmpty(guid))
                     {
-                        CorpseLockWatchdog.OnRemovalSent(guid);
-                        SkyCoopClient.EntitySync.SendRemove(CorpsePolicy.c_Kind, guid, 0);
+                        if (SkyCoopClient.EntitySync.SendRemove(CorpsePolicy.c_Kind, guid, 0))
+                        {
+                            CorpseLockWatchdog.OnRemovalSent(guid);
+                        }
                     }
                 }
                 catch (Exception e)
@@ -398,8 +414,10 @@ namespace SkyCoopClient
                     }
 
                     DebugLog($"SpawnCarcassPickup {guid} frame={Time.frameCount}");
-                    CorpseLockWatchdog.OnRemovalSent(guid);
-                    SkyCoopClient.EntitySync.SendRemove(CorpsePolicy.c_Kind, guid, 1);
+                    if (SkyCoopClient.EntitySync.SendRemove(CorpsePolicy.c_Kind, guid, 1))
+                    {
+                        CorpseLockWatchdog.OnRemovalSent(guid);
+                    }
                 }
                 catch (Exception e)
                 {
