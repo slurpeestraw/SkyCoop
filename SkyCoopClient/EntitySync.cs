@@ -106,7 +106,17 @@ namespace SkyCoopClient
                     Flags = flags,
                 };
 
+                if (CorpseSync.s_CorpseDebug)
+                {
+                    SkyCoop.Logger.Log(ConsoleColor.DarkCyan, $"[EntitySync] SendState {kind} {guid} flags={flags}");
+                }
+
                 ClientSend.SendEntityState(message);
+
+                if (flags.HasFlag(EntityFlags.Final))
+                {
+                    s_TrackedEntities.Remove(TrackedKey(kind, guid));
+                }
             }
             catch (Exception e)
             {

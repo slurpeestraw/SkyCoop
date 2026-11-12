@@ -130,8 +130,9 @@ namespace SkyCoopServer
                 sceneData.m_Entities.Remove(entity.m_GUID);
                 string kind = entity.m_Kind;
                 string guid = entity.m_GUID;
+                Logger.Log($"[EntitySync] {kind} {guid} removed by final report from {client.Id}");
                 SceneBroadcast.ToScene(server, scene, peer =>
-                    ServerSend.SendEntityRemoved(peer, kind, guid));
+                    ServerSend.SendEntityRemoved(peer, kind, guid), client.Id);
             }
         }
 

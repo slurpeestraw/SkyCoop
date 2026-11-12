@@ -1,8 +1,10 @@
 using Il2Cpp;
 using Il2CppTLD.PDID;
+using MelonLoader;
 using SkyCoop;
 using SkyCoopServer;
 using System;
+using System.Collections;
 using UnityEngine;
 
 namespace SkyCoopClient
@@ -173,8 +175,37 @@ namespace SkyCoopClient
 
         public void Remove(GameObject obj)
         {
+            LogControlMode("Remove enter");
             CloseOpenPanel(obj);
             AnimalsManager.HandleRemove(obj, "(corpse removed by server)");
+            MelonCoroutines.Start(LogControlModeAfterRemoval());
+        }
+
+        private static IEnumerator LogControlModeAfterRemoval()
+        {
+            yield return null;
+            LogControlMode("Remove +1 frame");
+            yield return new WaitForSeconds(1f);
+            LogControlMode("Remove +1s");
+        }
+
+        private static void LogControlMode(string when)
+        {
+            if (!CorpseSync.s_CorpseDebug)
+            {
+                return;
+            }
+
+            try
+            {
+                PlayerManager pm = GameManager.GetPlayerManagerComponent();
+                string mode = pm != null ? pm.GetControlMode().ToString() : "null";
+                SkyCoop.Logger.Log(ConsoleColor.Yellow, $"[CorpseAdapter] {when} controlMode={mode}");
+            }
+            catch (Exception e)
+            {
+                SkyCoop.Logger.Log(ConsoleColor.Red, $"[CorpseAdapter] {when} controlMode read failed: {e.GetType().Name}: {e.Message}");
+            }
         }
 
         private static BodyHarvest? GetBodyHarvest(GameObject obj)
