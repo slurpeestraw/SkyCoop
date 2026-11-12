@@ -465,7 +465,7 @@ namespace SkyCoopServer
                 return;
             }
 
-            if (SceneName == "" || SceneName == "Empty" || SceneName == "Boot" || SceneName.StartsWith("MainMenu"))
+            if (!SceneNames.IsGameplay(SceneName))
             {
                 ServerInstance.m_PlayersData.SetGameplayState(Client.Id, PlayerData.GamePlayState.Unassigned);
                 return;
@@ -490,6 +490,7 @@ namespace SkyCoopServer
             ServerInstance.m_PlayersData.SendAllPlayersOnScene(Client, SceneName);
             ServerInstance.m_ScenesData.SendAllHarvested(SceneName, Client);
             ServerInstance.m_ScenesData.SendAllBreakDown(SceneName, Client);
+            EntitySync.SendAll(ServerInstance, SceneName, Client);
 
             SceneData SceneData = ServerInstance.m_ScenesData.GetSceneData(SceneName);
 
@@ -654,18 +655,22 @@ namespace SkyCoopServer
 
             List<NetPeer> peers = new List<NetPeer>();
             ServerInstance.m_Instance.GetConnectedPeers(peers);
+
+            List<PlayerData> connectedPlayers = new List<PlayerData>();
             foreach (NetPeer Peer in peers.ToArray())
             {
                 PlayerData Data = ServerInstance.GetPlayerDataByNetPeer(Peer);
-                if (Peer.Id != Client.Id)
+                if (Data != null)
                 {
-                    if(Data.m_CarSeat == GUID || Data.m_InteractionGUID == GUID)
-                    {
-                        ServerSend.SendInteractResult(Client, false);
-                        ServerInstance.m_PlayersData.SetPlayerInteractionGUID(Player, "");
-                        return;
-                    }
+                    connectedPlayers.Add(Data);
                 }
+            }
+
+            if (InteractionLocks.IsBlocked(connectedPlayers, GUID, Player.m_PlayerID))
+            {
+                ServerSend.SendInteractResult(Client, false);
+                ServerInstance.m_PlayersData.SetPlayerInteractionGUID(Player, "");
+                return;
             }
 
             if (BindItNow)
@@ -854,6 +859,13 @@ namespace SkyCoopServer
             if (Player != null)
             {
                 Logger.Log(ConsoleColor.Cyan, $"Player {Player.m_PlayerName} (ID {Player.m_PlayerID}) sent CMD {CMD}");
+            }
+
+            string[] Tokens = CMD.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            if (Tokens.Length > 0 && string.Equals(Tokens[0], "entitytest", StringComparison.OrdinalIgnoreCase))
+            {
+                EntityTestCommand(ServerInstance, Tokens, Player);
+                return;
             }
 
             switch (CMD)
@@ -1049,6 +1061,33 @@ namespace SkyCoopServer
                     Logger.Log(ConsoleColor.Yellow, $"Unknown CMD {CMD}");
                     break;
             }
+        }
+
+        private static void EntityTestCommand(Server ServerInstance, string[] Tokens, PlayerData Player)
+        {
+            if (Player == null)
+            {
+                return;
+            }
+
+            if (Tokens.Length < 2 || !string.Equals(Tokens[1], "spawn", StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.Log(ConsoleColor.Yellow, "[entitytest] Usage: entitytest spawn [a]");
+                return;
+            }
+
+            string Alias = Tokens.Length >= 3 ? Tokens[2] : "a";
+            string Guid = DebugEntityAlias.ToGuid(Alias);
+
+            EntitySync.Create(
+                ServerInstance,
+                Player.m_Scene,
+                DebugEntityAlias.Kind,
+                Guid,
+                DebugEntityAlias.Kind,
+                Player.m_Position,
+                Player.m_Rotation,
+                Player.m_PlayerID);
         }
 
         public static void ClientSV_CMD(NetPeer Client, NetDataReader Reader, Server ServerInstance)
@@ -1622,7 +1661,7 @@ namespace SkyCoopServer
         {
             PlayerData Player = ServerInstance.GetPlayerDataByNetPeer(Client);
 
-            if (Player == null || string.IsNullOrEmpty(Player.m_Scene) || Player.m_Scene == "Empty" || Player.m_Scene == "Boot" || Player.m_Scene.StartsWith("MainMenu"))
+            if (Player == null || !SceneNames.IsGameplay(Player.m_Scene))
             {
                 return;
             }

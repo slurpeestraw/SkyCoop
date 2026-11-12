@@ -112,7 +112,7 @@ namespace SkyCoopServer
         public List<DataStr.PlayerData> GetPlayersOnScene(string Scene)
         {
             List<DataStr.PlayerData> ScenePlayers = new List<DataStr.PlayerData>();
-            if (Scene == "Empty" || Scene == "" || Scene == "Boot" || Scene.StartsWith("MainMenu"))
+            if (!SceneNames.IsGameplay(Scene))
             {
                 return ScenePlayers;
             }

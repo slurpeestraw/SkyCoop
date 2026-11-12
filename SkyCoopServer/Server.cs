@@ -112,6 +112,8 @@ namespace SkyCoopServer
             { (int)Packet.Type.ClientIsWorking, ServerHandle.ClientIsWorking },
             { (int)Packet.Type.ClientWaterSourceInteraction, ServerHandle.ClientWaterSourceInteraction },
             { (int)Packet.Type.ClientIceHoleStatus, ServerHandle.ClientIceHoleStatus },
+            { (int)Packet.Type.ClientEntityState, EntitySync.HandleClientState },
+            { (int)Packet.Type.ClientEntityRemove, EntitySync.HandleClientRemove },
             { (int)Packet.Type.ClientWaterSourceTakeWater, ServerHandle.ClientWaterSourceTakeWater },
             { (int)Packet.Type.ClientAnimalControlReply, ServerHandle.ClientAnimalControlReply },
             { (int)Packet.Type.ClientCheatSpawnAnimal, ServerHandle.ClientCheatSpawnAnimal },
@@ -303,6 +305,7 @@ namespace SkyCoopServer
                 EverySecond();
                 m_Timeline.UpdateEverySecond();
                 m_ScenesData.UpdateEverySecond();
+                EntitySync.TickPendingUploads(this);
 
                 if (m_Rules.m_Weather)
                 {

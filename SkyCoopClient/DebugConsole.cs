@@ -1,5 +1,6 @@
 ﻿using Il2Cpp;
 using Il2CppTLD.Gear;
+using Il2CppTLD.PDID;
 using Il2CppTLD.Scenes;
 using SkyCoop;
 using SkyCoopServer;
@@ -65,6 +66,58 @@ namespace SkyCoopClient
             uConsole.RegisterCommand("checksave", new Action(CheckSave));
             uConsole.RegisterCommand("ripnaratives", new Action(RIPNaratives));
             uConsole.RegisterCommand("nextframe", new Action(NextFrame));
+            uConsole.RegisterCommand("entitytest", new Action(EntityTest));
+        }
+
+        public static void EntityTest()
+        {
+            Il2CppCollection.List<string> parameters = uConsole.GetAllParameters();
+            if (parameters == null || parameters.Count == 0)
+            {
+                SkyCoop.Logger.Log("Usage: entitytest spawn|bump|hold|release|remove [a]");
+                return;
+            }
+
+            string subcommand = parameters[0].ToLowerInvariant();
+            string alias = parameters.Count >= 2 ? parameters[1] : "a";
+            string guid = DebugEntityAlias.ToGuid(alias);
+
+            if (subcommand == "spawn")
+            {
+                ClientSend.SendSV_CMD($"entitytest spawn {alias.ToLowerInvariant()}");
+                return;
+            }
+
+            if (subcommand == "release")
+            {
+                ClientSend.SendFinishInteract();
+                PlayersManager.s_LastTryInteractionComponent = null;
+                SkyCoop.Logger.Log("entitytest: released");
+                return;
+            }
+
+            if (subcommand != "bump" && subcommand != "hold" && subcommand != "remove")
+            {
+                SkyCoop.Logger.Log("Usage: entitytest spawn|bump|hold|release|remove [a]");
+                return;
+            }
+
+            GameObject? obj = PdidTable.GetGameObject(guid);
+            if (obj == null)
+            {
+                SkyCoop.Logger.Log($"entitytest: marker {alias} not found; run entitytest spawn {alias} first");
+                return;
+            }
+
+            DebugMarkerInteract? marker = obj.GetComponent<DebugMarkerInteract>();
+            if (marker == null)
+            {
+                marker = obj.AddComponent<DebugMarkerInteract>();
+            }
+            marker.m_GUID = guid;
+            marker.m_PendingAction = subcommand;
+            PlayersManager.s_LastTryInteractionComponent = marker;
+            ClientSend.SendTryInteract(guid, true);
         }
 
         public static void GiveIlegalGear()

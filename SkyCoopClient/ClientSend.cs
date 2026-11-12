@@ -779,5 +779,21 @@ namespace SkyCoop
 
             SendToHost(writer);
         }
+        public static void SendEntityState(EntityMessage Message)
+        {
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put((int)Packet.Type.ClientEntityState);
+            writer.Put(Message);
+            SendToHost(writer);
+        }
+        public static void SendEntityRemove(string Kind, string GUID, int Reason)
+        {
+            NetDataWriter writer = new NetDataWriter();
+            writer.Put((int)Packet.Type.ClientEntityRemove);
+            writer.Put(Kind ?? "");
+            writer.Put(GUID ?? "");
+            writer.Put(Reason);
+            SendToHost(writer);
+        }
     }
 }

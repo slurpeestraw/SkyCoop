@@ -6,6 +6,19 @@ using static SkyCoopServer.DataStr;
 
 namespace SkyCoopServer
 {
+    public struct EntityMessage
+    {
+        public string Kind;
+        public string GUID;
+        public string Prefab;
+        public string State;
+        public Vector3 Position;
+        public Quaternion Rotation;
+        public EntityFlags Flags;
+        public bool IsUploader;
+        public int Reason;
+    }
+
     public static class Packet
     {
         public enum Type
@@ -113,6 +126,10 @@ namespace SkyCoopServer
             ClientRequestAnimalArrows,
             ClientAnimalCorpse,
             ClientIceHoleStatus,
+            ClientEntityState,
+            ServerEntityState,
+            ClientEntityRemove,
+            ServerEntityRemoved,
         }
 
         public enum SquadResponce
@@ -133,7 +150,7 @@ namespace SkyCoopServer
 
         public const string c_Key = "public1";
 
-        public const int c_ProtocolVersion = 1;
+        public const int c_ProtocolVersion = 2;
 
         public enum TypeVoice
         {
@@ -722,6 +739,34 @@ namespace SkyCoopServer
             Arrow.m_Bone = Reader.GetString();
 
             return Arrow;
+        }
+
+        public static void Put(this NetDataWriter Writer, EntityMessage Message)
+        {
+            Writer.Put(Message.Kind ?? "");
+            Writer.Put(Message.GUID ?? "");
+            Writer.Put(Message.Prefab ?? "");
+            Writer.Put(Message.State ?? "");
+            Writer.Put(Message.Position);
+            Writer.Put(Message.Rotation);
+            Writer.Put((int)Message.Flags);
+            Writer.Put(Message.IsUploader);
+            Writer.Put(Message.Reason);
+        }
+
+        public static EntityMessage GetEntityMessage(this NetDataReader Reader)
+        {
+            EntityMessage Message = new EntityMessage();
+            Message.Kind = Reader.GetString();
+            Message.GUID = Reader.GetString();
+            Message.Prefab = Reader.GetString();
+            Message.State = Reader.GetString();
+            Message.Position = Reader.GetVector3();
+            Message.Rotation = Reader.GetQuaternion();
+            Message.Flags = (EntityFlags)Reader.GetInt();
+            Message.IsUploader = Reader.GetBool();
+            Message.Reason = Reader.GetInt();
+            return Message;
         }
     }
 }

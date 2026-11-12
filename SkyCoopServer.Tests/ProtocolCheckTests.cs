@@ -21,7 +21,7 @@ namespace SkyCoopServer.Tests
             bool compatible = ProtocolCheck.IsCompatible(null, out string reason);
 
             Assert.False(compatible);
-            Assert.Equal("Client too old: update SkyCoop (server protocol 1).", reason);
+            Assert.Equal($"Client too old: update SkyCoop (server protocol {Packet.c_ProtocolVersion}).", reason);
         }
 
         [Fact]
@@ -30,7 +30,7 @@ namespace SkyCoopServer.Tests
             bool compatible = ProtocolCheck.IsCompatible(0, out string reason);
 
             Assert.False(compatible);
-            Assert.Contains("client 0, server 1", reason);
+            Assert.Contains($"client 0, server {Packet.c_ProtocolVersion}", reason);
         }
 
         [Fact]
