@@ -80,7 +80,8 @@ namespace SkyCoopClient
                 }
 
                 BodyHarvest bh = panel.m_BodyHarvest;
-                if (!IsTrackedWorldCorpse(bh))
+                bool removalTarget = onlyFor != null && bh == onlyFor;
+                if (!IsTrackedWorldCorpse(bh) && !removalTarget)
                 {
                     return;
                 }
