@@ -29,6 +29,7 @@ namespace SkyCoopClient
                 {
                     CorpseSync.ClosePanelIfOpen();
                     EntitySync.ClearTracked();
+                    CorpseLockWatchdog.Clear();
                 }
                 catch (System.Exception e)
                 {

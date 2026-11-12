@@ -162,6 +162,7 @@ namespace SkyCoop
                 if(Client.m_IsReady)
                 {
                     PlayersManager.UpdateLocalPlayer();
+                    SkyCoopClient.CorpseLockWatchdog.Tick();
                 }
             }
 

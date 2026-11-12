@@ -1048,7 +1048,8 @@ namespace SkyCoop
 
         public static void HandleTryInteract(bool Result)
         {
-            if (s_LastTryInteractionComponent is BodyHarvest)
+            BodyHarvest corpse = s_LastTryInteractionComponent as BodyHarvest;
+            if (corpse != null)
             {
                 Action action = s_PendingInteractionAction;
                 s_PendingInteractionAction = null;
@@ -1057,11 +1058,20 @@ namespace SkyCoop
                 {
                     if (action != null)
                     {
+                        if (CorpseSync.TryGetGuid(corpse, out string guid))
+                        {
+                            CorpseLockWatchdog.OnGranted(corpse, guid);
+                        }
+
                         s_GrantedReentry = true;
                         CorpseSync.DebugLog($"HandleTryInteract corpse before frame={Time.frameCount}");
                         try
                         {
                             action();
+                        }
+                        catch (Exception e)
+                        {
+                            SkyCoop.Logger.Log(ConsoleColor.Red, $"[PlayersManager] Corpse interaction replay failed: {e.GetType().Name}: {e.Message}");
                         }
                         finally
                         {

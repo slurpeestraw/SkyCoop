@@ -187,6 +187,8 @@ namespace SkyCoopClient
                     {
                         ClientSend.SendFinishInteract();
                     }
+
+                    CorpseLockWatchdog.Clear();
                 }
                 catch (Exception e)
                 {
@@ -326,6 +328,7 @@ namespace SkyCoopClient
 
                     if (!string.IsNullOrEmpty(guid))
                     {
+                        CorpseLockWatchdog.OnRemovalSent(guid);
                         SkyCoopClient.EntitySync.SendRemove(CorpsePolicy.c_Kind, guid, 0);
                     }
                 }
@@ -361,6 +364,7 @@ namespace SkyCoopClient
                     }
 
                     DebugLog($"SpawnCarcassPickup {guid} frame={Time.frameCount}");
+                    CorpseLockWatchdog.OnRemovalSent(guid);
                     SkyCoopClient.EntitySync.SendRemove(CorpsePolicy.c_Kind, guid, 1);
                 }
                 catch (Exception e)
