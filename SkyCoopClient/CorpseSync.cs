@@ -88,6 +88,24 @@ namespace SkyCoopClient
             }
         }
 
+        [HarmonyPatch(typeof(BodyHarvestManager), "Serialize")]
+        private static class BodyHarvestManager_Serialize
+        {
+            private static void Prefix()
+            {
+                DebugLog("BodyHarvestManager.Serialize");
+            }
+        }
+
+        [HarmonyPatch(typeof(BodyHarvestManager), "Deserialize")]
+        private static class BodyHarvestManager_Deserialize
+        {
+            private static void Prefix(string text)
+            {
+                DebugLog($"BodyHarvestManager.Deserialize chars={text?.Length ?? 0}");
+            }
+        }
+
         [HarmonyPatch(typeof(BodyHarvest), "InteractWithBodyHarvest")]
         private static class BodyHarvest_InteractWithBodyHarvest
         {
@@ -132,7 +150,7 @@ namespace SkyCoopClient
         {
             private static void Postfix(Panel_BodyHarvest __instance, bool enable)
             {
-                if (!ModMain.IsMultiplayer() || enable)
+                if (!ModMain.IsMultiplayer())
                 {
                     return;
                 }
@@ -140,6 +158,15 @@ namespace SkyCoopClient
                 try
                 {
                     BodyHarvest bh = __instance.m_BodyHarvest;
+                    if (enable)
+                    {
+                        if (s_CorpseDebug)
+                        {
+                            DebugLog($"Panel Enable(true) {bh?.name} canEnable={(bh != null && __instance.CanEnable(bh))} isEnabled={__instance.IsEnabled()} gear={bh?.IsGearItem()}");
+                        }
+                        return;
+                    }
+
                     DebugLog($"Panel Enable(false) {bh?.name} tracked={IsTrackedWorldCorpse(bh)} quartering={s_Quartering}");
                     if (!IsTrackedWorldCorpse(bh) || !TryGetGuid(bh, out string guid))
                     {
@@ -333,7 +360,7 @@ namespace SkyCoopClient
                         return;
                     }
 
-                    DebugLog($"Picked up {guid}");
+                    DebugLog($"SpawnCarcassPickup {guid} frame={Time.frameCount}");
                     SkyCoopClient.EntitySync.SendRemove(CorpsePolicy.c_Kind, guid, 1);
                 }
                 catch (Exception e)

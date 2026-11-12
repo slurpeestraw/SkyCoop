@@ -209,7 +209,7 @@ namespace SkyCoopClient
                             !PlayersManager.s_GrantedReentry &&
                             CorpseSync.IsTrackedWorldCorpse(bodyHarvest))
                         {
-                            CorpseSync.DebugLog($"Pickup interaction gate {bodyHarvest.name}");
+                            CorpseSync.DebugLog($"Pickup interaction gate {bodyHarvest.name} interaction={__instance.ActiveInteraction.GetType().Name} frame={Time.frameCount}");
                             if (PlayersManager.TryInteract(bodyHarvest, () => __instance.InteractiveObjectsProcessInteraction()))
                             {
                                 return false;

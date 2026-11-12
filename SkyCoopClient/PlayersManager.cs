@@ -1058,12 +1058,14 @@ namespace SkyCoop
                     if (action != null)
                     {
                         s_GrantedReentry = true;
+                        CorpseSync.DebugLog($"HandleTryInteract corpse before frame={Time.frameCount}");
                         try
                         {
                             action();
                         }
                         finally
                         {
+                            CorpseSync.DebugLog($"HandleTryInteract corpse after frame={Time.frameCount}");
                             s_GrantedReentry = false;
                         }
                     }
