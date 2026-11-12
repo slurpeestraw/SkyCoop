@@ -197,28 +197,7 @@ namespace SkyCoopClient
 
         private static void CloseOpenPanel(GameObject obj)
         {
-            BodyHarvest? bh = GetBodyHarvest(obj);
-            if (bh == null)
-            {
-                return;
-            }
-
-            Panel_BodyHarvest panel = InterfaceManager.GetPanel<Panel_BodyHarvest>();
-            if (panel == null || panel.m_BodyHarvest != bh || !panel.IsEnabled())
-            {
-                return;
-            }
-
-            bool wasApplying = EntitySync.s_ApplyingRemote;
-            EntitySync.s_ApplyingRemote = true;
-            try
-            {
-                panel.Enable(false);
-            }
-            finally
-            {
-                EntitySync.s_ApplyingRemote = wasApplying;
-            }
+            CorpseSync.ForceClosePanel(GetBodyHarvest(obj), true);
         }
     }
 }

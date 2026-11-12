@@ -61,6 +61,11 @@ namespace SkyCoopClient
 
         public static void ClosePanelIfOpen()
         {
+            ForceClosePanel(null, false);
+        }
+
+        public static void ForceClosePanel(BodyHarvest? onlyFor, bool suppressSend)
+        {
             if (!ModMain.IsMultiplayer())
             {
                 return;
@@ -74,17 +79,45 @@ namespace SkyCoopClient
                     return;
                 }
 
-                if (!IsTrackedWorldCorpse(panel.m_BodyHarvest))
+                BodyHarvest bh = panel.m_BodyHarvest;
+                if (!IsTrackedWorldCorpse(bh))
                 {
                     return;
                 }
 
-                DebugLog($"Closing panel for {panel.m_BodyHarvest.name}");
-                panel.Enable(false);
+                if (onlyFor != null && bh != onlyFor)
+                {
+                    return;
+                }
+
+                DebugLog($"Force-closing panel for {bh.name} suppressSend={suppressSend}");
+
+                bool wasApplying = SkyCoopClient.EntitySync.s_ApplyingRemote;
+                if (suppressSend)
+                {
+                    SkyCoopClient.EntitySync.s_ApplyingRemote = true;
+                }
+
+                try
+                {
+                    if (panel.IsHarvestingOrQuartering())
+                    {
+                        panel.OnCancel();
+                    }
+
+                    panel.Enable(false);
+                }
+                finally
+                {
+                    if (suppressSend)
+                    {
+                        SkyCoopClient.EntitySync.s_ApplyingRemote = wasApplying;
+                    }
+                }
             }
             catch (Exception e)
             {
-                SkyCoop.Logger.Log(ConsoleColor.Red, $"[CorpseSync] ClosePanelIfOpen failed: {e.GetType().Name}: {e.Message}");
+                SkyCoop.Logger.Log(ConsoleColor.Red, $"[CorpseSync] ForceClosePanel failed: {e.GetType().Name}: {e.Message}");
             }
         }
 
